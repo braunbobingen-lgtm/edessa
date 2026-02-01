@@ -1,32 +1,28 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>QR Scanner</title>
+  <title>QR App</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>QR Scanner</h2>
+<h2>📷 QR Сканер</h2>
 
-<video id="video" width="300" height="220" autoplay></video>
-<br><br>
-<button onclick="startCamera()">📷 Kamera starten</button>
+<video id="video" autoplay></video>
 
-<p id="result"></p>
+<div class="card">
+  <p><b>Адрес:</b> <span id="address">—</span></p>
+  <p><b>Телефон:</b> <span id="phone">—</span></p>
+  <p><b>Сумма:</b> <span id="amount">—</span></p>
+</div>
 
-<script>
-async function startCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" }
-    });
-    document.getElementById("video").srcObject = stream;
-  } catch (e) {
-    alert("Kamera konnte nicht gestartet werden");
-  }
-}
-</script>
+<div class="buttons">
+  <button id="callBtn">📞 Позвонить</button>
+  <button id="navBtn">🧭 Навигация</button>
+</div>
 
+<script src="script.js"></script>
 </body>
 </html>
