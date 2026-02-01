@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<h2>QR Scanner</h2>
+
+<video id="video" width="300" height="220" autoplay></video>
+<br><br>
+<button onclick="startCamera()">📷 Kamera starten</button>
+
+<p id="result"></p>
+
+<script>
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+    document.getElementById("video").srcObject = stream;
+  } catch (e) {
+    alert("Kamera konnte nicht gestartet werden");
+  }
+}
+</script>
+
+</body>
+</html>
