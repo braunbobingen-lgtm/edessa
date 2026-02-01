@@ -2,16 +2,65 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>QR App</title>
+  <title>QR Scanner App</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+
+  <!-- QR библиотека -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 15px;
+      text-align: center;
+      background: #f5f5f5;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 400px;
+      margin: auto;
+    }
+
+    .card {
+      background: white;
+      padding: 12px;
+      border-radius: 12px;
+      margin-top: 15px;
+      text-align: left;
+    }
+
+    .buttons {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      background: #007bff;
+      color: white;
+    }
+
+    button:disabled {
+      background: #aaa;
+    }
+  </style>
 </head>
+
 <body>
 
 <h2>📷 QR Сканер</h2>
 
-<script src="https://unpkg.com/html5-qrcode"></script>
-<script src="script.js"></script>
+<div id="reader"></div>
 
 <div class="card">
   <p><b>Адрес:</b> <span id="address">—</span></p>
@@ -20,11 +69,82 @@
 </div>
 
 <div class="buttons">
-  <button id="callBtn">📞 Позвонить</button>
-  <button id="navBtn">🧭 Навигация</button>
+  <button id="callBtn" disabled>📞 Позвонить</button>
+  <button id="navBtn" disabled>🧭 Навигация</button>
 </div>
 
-<script src="script.js"></script>
-</body>
+<script>
+  const addressEl = document.getElementById("address");
+  const phoneEl = document.getElementById("phone");
+  const amountEl = document.getElementById("amount");
 
+  const callBtn = document.getElementById("callBtn");
+  const navBtn = document.getElementById("navBtn");
+
+  let lastData = null;
+
+  function parseQR(text) {
+    // формат QR:
+    // ADR=Berlin Musterstraße 5;TEL=+49123456789;AMOUNT=25.50
+
+    const get = (key) => {
+      const m = text.match(new RegExp(key + "=([^;]+)"));
+      return m ? m[1] : "";
+    };
+
+    const address = get("ADR");
+    const phone = get("TEL");
+    const amount = get("AMOUNT");
+
+    addressEl.textContent = address || "—";
+    phoneEl.textContent = phone || "—";
+    amountEl.textContent = amount || "—";
+
+    lastData = { address, phone, amount };
+    localStorage.setItem("qrData", JSON.stringify(lastData));
+
+    callBtn.disabled = !phone;
+    navBtn.disabled = !address;
+  }
+
+  callBtn.onclick = () => {
+    if (lastData?.phone) {
+      location.href = "tel:" + lastData.phone;
+    }
+  };
+
+  navBtn.onclick = () => {
+    if (lastData?.address) {
+      location.href =
+        "https://www.google.com/maps/search/?api=1&query=" +
+        encodeURIComponent(lastData.address);
+    }
+  };
+
+  // восстановление данных
+  const saved = localStorage.getItem("qrData");
+  if (saved) {
+    lastData = JSON.parse(saved);
+    addressEl.textContent = lastData.address || "—";
+    phoneEl.textContent = lastData.phone || "—";
+    amountEl.textContent = lastData.amount || "—";
+    callBtn.disabled = !lastData.phone;
+    navBtn.disabled = !lastData.address;
+  }
+
+  // 🔥 НАСТОЯЩИЙ QR СКАНЕР
+  const qr = new Html5Qrcode("reader");
+
+  qr.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    (text) => {
+      qr.stop();
+      parseQR(text);
+    },
+    (err) => {}
+  );
+</script>
+
+</body>
 </html>
