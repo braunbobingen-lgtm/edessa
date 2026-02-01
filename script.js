@@ -1,5 +1,3 @@
-const video = document.getElementById("video");
-
 const addressEl = document.getElementById("address");
 const phoneEl = document.getElementById("phone");
 const amountEl = document.getElementById("amount");
@@ -12,34 +10,18 @@ navBtn.disabled = true;
 
 let lastData = null;
 
-async function startScanner() {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: "environment" }
-  });
-  video.srcObject = stream;
-
-  const detector = new BarcodeDetector({ formats: ["qr_code"] });
-
-  async function scan() {
-    const codes = await detector.detect(video);
-    if (codes.length > 0) {
-      handleQR(codes[0].rawValue);
-      stream.getTracks().forEach(t => t.stop());
-      return;
-    }
-    requestAnimationFrame(scan);
-  }
-
-  scan();
-}
-
-function handleQR(text) {
-  // пример QR:
+function parseQR(text) {
+  // пример:
   // ADR=Berlin Musterstr 5;TEL=+491234567;AMOUNT=25.50
 
-  const address = getValue(text, "ADR");
-  const phone = getValue(text, "TEL");
-  const amount = getValue(text, "AMOUNT");
+  const get = (key) => {
+    const m = text.match(new RegExp(key + "=([^;]+)"));
+    return m ? m[1] : "";
+  };
+
+  const address = get("ADR");
+  const phone = get("TEL");
+  const amount = get("AMOUNT");
 
   addressEl.textContent = address || "—";
   phoneEl.textContent = phone || "—";
@@ -50,11 +32,6 @@ function handleQR(text) {
 
   callBtn.disabled = !phone;
   navBtn.disabled = !address;
-}
-
-function getValue(text, key) {
-  const m = text.match(new RegExp(key + "=([^;]+)"));
-  return m ? m[1] : "";
 }
 
 // кнопки
@@ -72,7 +49,7 @@ navBtn.onclick = () => {
   }
 };
 
-// загрузка сохранённых данных
+// восстановление данных
 const saved = localStorage.getItem("qrData");
 if (saved) {
   lastData = JSON.parse(saved);
@@ -83,4 +60,14 @@ if (saved) {
   navBtn.disabled = !lastData.address;
 }
 
-startScanner();
+// 🔥 НАСТОЯЩИЙ QR-Сканер
+const qr = new Html5Qrcode("reader");
+
+qr.start(
+  { facingMode: "environment" },
+  { fps: 10, qrbox: 250 },
+  (text) => {
+    qr.stop();
+    parseQR(text);
+  }
+);
