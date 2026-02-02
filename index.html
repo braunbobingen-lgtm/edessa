@@ -137,16 +137,33 @@
   // 🔥 QR scanner
   const qr = new Html5Qrcode("reader");
 
-  qr.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    (text) => {
-      qr.stop();
-      parseQR(text);
-    },
-    () => {}
-  );
+qr.start(
+  {
+    facingMode: "environment",
+    focusMode: "continuous"
+  },
+  {
+    fps: 25,
+    qrbox: { width: 160, height: 160 },
+    disableFlip: true
+  },
+  (text) => {
+    qr.stop();
+    parseQR(text);
+  },
+  (err) => {}
+);
+
+// 🔍 авто-зум (очень помогает для маленьких QR)
+setTimeout(() => {
+  try {
+    qr.applyVideoConstraints({
+      advanced: [{ zoom: 2.5 }]
+    });
+  } catch (e) {}
+}, 1200);
 </script>
 
 </body>
 </html>
+
