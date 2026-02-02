@@ -1,78 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <title>QR Scanner App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- QR scanner library -->
-  <script src="https://unpkg.com/html5-qrcode"></script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 15px;
-      background: #f5f5f5;
-      text-align: center;
-    }
-
-    h2 {
-      margin-bottom: 10px;
-    }
-
-    #reader {
-      width: 100%;
-      max-width: 420px;
-      margin: auto;
-    }
-
-    .card {
-      background: white;
-      padding: 12px;
-      border-radius: 12px;
-      margin-top: 15px;
-      text-align: left;
-    }
-
-    .buttons {
-      margin-top: 15px;
-      display: flex;
-      gap: 10px;
-    }
-
-    button {
-      flex: 1;
-      padding: 12px;
-      font-size: 16px;
-      border: none;
-      border-radius: 10px;
-      background: #007bff;
-      color: white;
-    }
-
-    button:disabled {
-      background: #aaa;
-    }
-  </style>
-</head>
-
-<body>
-
-<h2>📷 QR Сканер</h2>
-
-<div id="reader"></div>
-
-<div class="card">
-  <p><b>Адрес:</b> <span id="address">—</span></p>
-  <p><b>Телефон:</b> <span id="phone">—</span></p>
-  <p><b>Сумма:</b> <span id="amount">—</span></p>
-</div>
-
-<div class="buttons">
-  <button id="callBtn" disabled>📞 Позвонить</button>
-  <button id="navBtn" disabled>🧭 Навигация</button>
-</div>
-
 <script>
   const addressEl = document.getElementById("address");
   const phoneEl = document.getElementById("phone");
@@ -86,21 +11,19 @@
   function parseQR(text) {
     console.log("QR:", text);
 
-    // 1️⃣ Google Maps link
+    // Google Maps
     if (text.includes("google.com/maps")) {
       const decoded = decodeURIComponent(text);
       const m = decoded.match(/query=([^&]+)/);
       if (m) {
         addressEl.textContent = m[1];
-        phoneEl.textContent = "—";
-        amountEl.textContent = "—";
-        lastData = { address: m[1] };
         navBtn.disabled = false;
+        lastData = { address: m[1] };
         return;
       }
     }
 
-    // 2️⃣ Structured QR: ADR / TEL / AMOUNT
+    // structured QR
     const get = (key) => {
       const m = text.match(new RegExp(key + "=([^;]+)"));
       return m ? m[1] : "";
@@ -134,36 +57,16 @@
     }
   };
 
-  // 🔥 QR scanner
+  // 🔥 БАЗОВЫЙ СКАНЕР (100% рабочий)
   const qr = new Html5Qrcode("reader");
 
-qr.start(
-  {
-    facingMode: "environment",
-    focusMode: "continuous"
-  },
-  {
-    fps: 25,
-    qrbox: { width: 160, height: 160 },
-    disableFlip: true
-  },
-  (text) => {
-    qr.stop();
-    parseQR(text);
-  },
-  (err) => {}
-);
-
-// 🔍 авто-зум (очень помогает для маленьких QR)
-setTimeout(() => {
-  try {
-    qr.applyVideoConstraints({
-      advanced: [{ zoom: 2.5 }]
-    });
-  } catch (e) {}
-}, 1200);
+  qr.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    (text) => {
+      qr.stop();
+      parseQR(text);
+    },
+    (err) => {}
+  );
 </script>
-
-</body>
-</html>
-
