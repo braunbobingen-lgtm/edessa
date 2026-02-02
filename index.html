@@ -1,72 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>QR TEST</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ВАЖНО: библиотека -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      padding: 10px;
+    }
+    #reader {
+      width: 100%;
+      max-width: 400px;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+
+<h2>QR TEST</h2>
+
+<div id="reader"></div>
+
 <script>
-  const addressEl = document.getElementById("address");
-  const phoneEl = document.getElementById("phone");
-  const amountEl = document.getElementById("amount");
-
-  const callBtn = document.getElementById("callBtn");
-  const navBtn = document.getElementById("navBtn");
-
-  let lastData = {};
-
-  function parseQR(text) {
-    console.log("QR:", text);
-
-    // Google Maps
-    if (text.includes("google.com/maps")) {
-      const decoded = decodeURIComponent(text);
-      const m = decoded.match(/query=([^&]+)/);
-      if (m) {
-        addressEl.textContent = m[1];
-        navBtn.disabled = false;
-        lastData = { address: m[1] };
-        return;
-      }
-    }
-
-    // structured QR
-    const get = (key) => {
-      const m = text.match(new RegExp(key + "=([^;]+)"));
-      return m ? m[1] : "";
-    };
-
-    const address = get("ADR");
-    const phone = get("TEL");
-    const amount = get("AMOUNT");
-
-    addressEl.textContent = address || text;
-    phoneEl.textContent = phone || "—";
-    amountEl.textContent = amount || "—";
-
-    lastData = { address, phone, amount };
-
-    callBtn.disabled = !phone;
-    navBtn.disabled = !address;
-  }
-
-  callBtn.onclick = () => {
-    if (lastData.phone) {
-      location.href = "tel:" + lastData.phone;
-    }
-  };
-
-  navBtn.onclick = () => {
-    if (lastData.address) {
-      location.href =
-        "https://www.google.com/maps/search/?api=1&query=" +
-        encodeURIComponent(lastData.address);
-    }
-  };
-
-  // 🔥 БАЗОВЫЙ СКАНЕР (100% рабочий)
+  // ПРОСТЕЙШИЙ СКАНЕР
   const qr = new Html5Qrcode("reader");
 
   qr.start(
     { facingMode: "environment" },
     { fps: 10, qrbox: 250 },
     (text) => {
+      alert("QR считан:\n" + text);
       qr.stop();
-      parseQR(text);
     },
     (err) => {}
   );
 </script>
+
+</body>
+</html>
