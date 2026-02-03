@@ -14,24 +14,19 @@ body {
   margin: 0;
   padding: 15px;
 }
-
 .app {
   max-width: 420px;
   margin: auto;
 }
-
 h2 {
   text-align: center;
   margin-bottom: 10px;
 }
-
 #reader {
   border-radius: 16px;
   overflow: hidden;
   background: black;
 }
-
-/* карточка */
 .card {
   background: white;
   border-radius: 16px;
@@ -39,36 +34,22 @@ h2 {
   margin-top: 15px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
-
 .row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 8px 0;
   border-bottom: 1px solid #eee;
 }
-
-.row:last-child {
-  border-bottom: none;
-}
-
+.row:last-child { border-bottom: none; }
 .label {
   color: #888;
   font-size: 13px;
 }
-
 .value {
   font-size: 16px;
   font-weight: 500;
 }
-
-/* телефон + кнопка */
-.phone-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .call-btn {
   background: #34c759;
   border: none;
@@ -78,19 +59,13 @@ h2 {
   font-size: 18px;
   color: white;
 }
-
-.call-btn:disabled {
-  background: #ccc;
-}
-
-/* кнопки навигации */
-.nav-buttons {
+.call-btn:disabled { background: #ccc; }
+.nav-buttons, .extra-buttons {
   display: flex;
   gap: 10px;
   margin-top: 15px;
 }
-
-.nav-buttons button {
+button {
   flex: 1;
   padding: 14px;
   border-radius: 14px;
@@ -98,25 +73,15 @@ h2 {
   font-size: 15px;
   font-weight: 500;
 }
-
-.google {
-  background: #4285f4;
-  color: white;
-}
-
-.apple {
-  background: black;
-  color: white;
-}
-
-button:disabled {
-  opacity: 0.4;
-}
+.google { background: #4285f4; color: white; }
+.apple { background: black; color: white; }
+.flash { background: #ffcc00; }
+.rescan { background: #ddd; }
+button:disabled { opacity: 0.4; }
 </style>
 </head>
 
 <body>
-
 <div class="app">
 
 <h2>📷 QR-Сканер</h2>
@@ -131,7 +96,7 @@ button:disabled {
     </div>
   </div>
 
-  <div class="row phone-row">
+  <div class="row">
     <div>
       <div class="label">Телефон</div>
       <div class="value" id="phone">—</div>
@@ -152,6 +117,11 @@ button:disabled {
   <button class="apple" id="appleBtn" disabled>Apple Maps</button>
 </div>
 
+<div class="extra-buttons">
+  <button class="flash" id="flashBtn">🔦</button>
+  <button class="rescan" id="rescanBtn">🔁 Сканировать</button>
+</div>
+
 </div>
 
 <script>
@@ -162,15 +132,16 @@ const amountEl = document.getElementById("amount");
 const callBtn = document.getElementById("callBtn");
 const googleBtn = document.getElementById("googleBtn");
 const appleBtn = document.getElementById("appleBtn");
+const flashBtn = document.getElementById("flashBtn");
+const rescanBtn = document.getElementById("rescanBtn");
 
-let data = {};
+let qr;
+let torchOn = false;
+let lastData = {};
 
-// 🔍 парсинг QR
+// 🧠 парсинг QR
 function parseQR(text) {
-  let address = "";
-  let phone = "";
-  let amount = "";
-
+  let address = "", phone = "", amount = "";
   const parts = text.split(";");
 
   if (parts[0] && !parts[0].includes("=")) {
@@ -186,7 +157,8 @@ function parseQR(text) {
   phoneEl.textContent = phone || "—";
   amountEl.textContent = amount || "—";
 
-  data = { address, phone };
+  lastData = { address, phone, amount };
+  localStorage.setItem("lastQR", JSON.stringify(lastData));
 
   callBtn.disabled = !phone;
   googleBtn.disabled = !address;
@@ -194,36 +166,49 @@ function parseQR(text) {
 }
 
 // 📞 звонок
-callBtn.onclick = () => {
-  location.href = "tel:" + data.phone;
+callBtn.onclick = () => location.href = "tel:" + lastData.phone;
+
+// 🧭 карты
+googleBtn.onclick = () =>
+  location.href = "https://www.google.com/maps/search/?api=1&query=" +
+  encodeURIComponent(lastData.address);
+
+appleBtn.onclick = () =>
+  location.href = "https://maps.apple.com/?q=" +
+  encodeURIComponent(lastData.address);
+
+// 🔦 вспышка
+flashBtn.onclick = () => {
+  torchOn = !torchOn;
+  try {
+    qr.applyVideoConstraints({ advanced: [{ torch: torchOn }] });
+  } catch (e) {}
 };
 
-// 🧭 Google Maps
-googleBtn.onclick = () => {
-  location.href =
-    "https://www.google.com/maps/search/?api=1&query=" +
-    encodeURIComponent(data.address);
-};
+// 🔁 перескан
+rescanBtn.onclick = () => startScanner();
 
-// 🍎 Apple Maps
-appleBtn.onclick = () => {
-  location.href =
-    "https://maps.apple.com/?q=" +
-    encodeURIComponent(data.address);
-};
+// 📷 запуск сканера
+function startScanner() {
+  document.getElementById("reader").innerHTML = "";
+  qr = new Html5Qrcode("reader");
+  qr.start(
+    { facingMode: "environment" },
+    { fps: 15, qrbox: { width: 180, height: 180 }, disableFlip: true },
+    (text) => {
+      qr.stop();
+      parseQR(text);
+    },
+    () => {}
+  );
+}
 
-// 📷 QR scanner
-const qr = new Html5Qrcode("reader");
+// ♻ восстановление данных
+const saved = localStorage.getItem("lastQR");
+if (saved) parseQR(JSON.parse(saved).address + ";T=" + JSON.parse(saved).phone + ";B=" + JSON.parse(saved).amount);
 
-qr.start(
-  { facingMode: "environment" },
-  { fps: 15, qrbox: { width: 180, height: 180 } },
-  (text) => {
-    qr.stop();
-    parseQR(text);
-  },
-  () => {}
-);
+// ▶ старт
+startScanner();
 </script>
 
 </body>
