@@ -14,19 +14,15 @@ body {
   margin: 0;
   padding: 15px;
 }
-.app {
-  max-width: 420px;
-  margin: auto;
-}
-h2 {
-  text-align: center;
-  margin-bottom: 10px;
-}
+.app { max-width: 420px; margin: auto; }
+h2 { text-align: center; margin-bottom: 10px; }
+
 #reader {
   border-radius: 16px;
   overflow: hidden;
   background: black;
 }
+
 .card {
   background: white;
   border-radius: 16px;
@@ -34,6 +30,7 @@ h2 {
   margin-top: 15px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
+
 .row {
   display: flex;
   justify-content: space-between;
@@ -42,14 +39,10 @@ h2 {
   border-bottom: 1px solid #eee;
 }
 .row:last-child { border-bottom: none; }
-.label {
-  color: #888;
-  font-size: 13px;
-}
-.value {
-  font-size: 16px;
-  font-weight: 500;
-}
+
+.label { color: #888; font-size: 13px; }
+.value { font-size: 16px; font-weight: 500; }
+
 .call-btn {
   background: #34c759;
   border: none;
@@ -60,7 +53,8 @@ h2 {
   color: white;
 }
 .call-btn:disabled { background: #ccc; }
-.nav-buttons, .extra-buttons {
+
+.buttons, .extra {
   display: flex;
   gap: 10px;
   margin-top: 15px;
@@ -71,12 +65,20 @@ button {
   border-radius: 14px;
   border: none;
   font-size: 15px;
-  font-weight: 500;
 }
 .google { background: #4285f4; color: white; }
 .apple { background: black; color: white; }
 .flash { background: #ffcc00; }
 .rescan { background: #ddd; }
+
+.history-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+.history-item:last-child { border-bottom: none; }
+.history-item b { display: block; }
+
 button:disabled { opacity: 0.4; }
 </style>
 </head>
@@ -85,7 +87,6 @@ button:disabled { opacity: 0.4; }
 <div class="app">
 
 <h2>📷 QR-Сканер</h2>
-
 <div id="reader"></div>
 
 <div class="card">
@@ -112,14 +113,22 @@ button:disabled { opacity: 0.4; }
   </div>
 </div>
 
-<div class="nav-buttons">
+<div class="buttons">
   <button class="google" id="googleBtn" disabled>Google Maps</button>
   <button class="apple" id="appleBtn" disabled>Apple Maps</button>
 </div>
 
-<div class="extra-buttons">
+<div class="extra">
   <button class="flash" id="flashBtn">🔦</button>
   <button class="rescan" id="rescanBtn">🔁 Сканировать</button>
+</div>
+
+<div class="card">
+  <div class="label">История сканов</div>
+  <div id="history"></div>
+  <button id="clearHistory" style="margin-top:10px;background:#ff3b30;color:white;">
+    🗑 Очистить
+  </button>
 </div>
 
 </div>
@@ -136,39 +145,66 @@ const flashBtn = document.getElementById("flashBtn");
 const rescanBtn = document.getElementById("rescanBtn");
 
 let qr;
-let torchOn = false;
+let torch = false;
+
+let history = JSON.parse(localStorage.getItem("qrHistory") || "[]");
 let lastData = {};
 
-// 🧠 парсинг QR
 function parseQR(text) {
-  let address = "", phone = "", amount = "";
+  let address="", phone="", amount="";
   const parts = text.split(";");
 
-  if (parts[0] && !parts[0].includes("=")) {
-    address = parts[0].trim();
-  }
+  if (parts[0] && !parts[0].includes("=")) address = parts[0].trim();
 
   parts.forEach(p => {
     if (p.startsWith("T=")) phone = p.substring(2).trim();
     if (p.startsWith("B=")) amount = p.substring(2).replace(",", ".").trim();
   });
 
+  lastData = { address, phone, amount, time: new Date().toLocaleString() };
+
   addressEl.textContent = address || "—";
   phoneEl.textContent = phone || "—";
   amountEl.textContent = amount || "—";
 
-  lastData = { address, phone, amount };
-  localStorage.setItem("lastQR", JSON.stringify(lastData));
-
   callBtn.disabled = !phone;
   googleBtn.disabled = !address;
   appleBtn.disabled = !address;
+
+  history.unshift(lastData);
+  history = history.slice(0, 50);
+  localStorage.setItem("qrHistory", JSON.stringify(history));
+  renderHistory();
 }
 
-// 📞 звонок
+function renderHistory() {
+  const box = document.getElementById("history");
+  box.innerHTML = "";
+  history.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "history-item";
+    div.innerHTML = `
+      <b>${item.address || "—"}</b>
+      📞 ${item.phone || "—"} | 💶 ${item.amount || "—"}
+      <div style="font-size:12px;color:#888">${item.time}</div>
+    `;
+    div.onclick = () => fill(item);
+    box.appendChild(div);
+  });
+}
+
+function fill(item) {
+  addressEl.textContent = item.address || "—";
+  phoneEl.textContent = item.phone || "—";
+  amountEl.textContent = item.amount || "—";
+  lastData = item;
+  callBtn.disabled = !item.phone;
+  googleBtn.disabled = !item.address;
+  appleBtn.disabled = !item.address;
+}
+
 callBtn.onclick = () => location.href = "tel:" + lastData.phone;
 
-// 🧭 карты
 googleBtn.onclick = () =>
   location.href = "https://www.google.com/maps/search/?api=1&query=" +
   encodeURIComponent(lastData.address);
@@ -177,25 +213,33 @@ appleBtn.onclick = () =>
   location.href = "https://maps.apple.com/?q=" +
   encodeURIComponent(lastData.address);
 
-// 🔦 вспышка
+// 🔦 фонарик (если поддерживается)
 flashBtn.onclick = () => {
-  torchOn = !torchOn;
+  torch = !torch;
   try {
-    qr.applyVideoConstraints({ advanced: [{ torch: torchOn }] });
-  } catch (e) {}
+    qr.applyVideoConstraints({ advanced: [{ torch }] });
+  } catch (e) {
+    alert("Фонарик не поддерживается на этом устройстве");
+  }
 };
 
-// 🔁 перескан
 rescanBtn.onclick = () => startScanner();
 
-// 📷 запуск сканера
+document.getElementById("clearHistory").onclick = () => {
+  if (confirm("Очистить историю?")) {
+    history = [];
+    localStorage.removeItem("qrHistory");
+    renderHistory();
+  }
+};
+
 function startScanner() {
   document.getElementById("reader").innerHTML = "";
   qr = new Html5Qrcode("reader");
   qr.start(
     { facingMode: "environment" },
     { fps: 15, qrbox: { width: 180, height: 180 }, disableFlip: true },
-    (text) => {
+    text => {
       qr.stop();
       parseQR(text);
     },
@@ -203,11 +247,7 @@ function startScanner() {
   );
 }
 
-// ♻ восстановление данных
-const saved = localStorage.getItem("lastQR");
-if (saved) parseQR(JSON.parse(saved).address + ";T=" + JSON.parse(saved).phone + ";B=" + JSON.parse(saved).amount);
-
-// ▶ старт
+renderHistory();
 startScanner();
 </script>
 
