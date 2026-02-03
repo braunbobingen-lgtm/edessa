@@ -14,13 +14,34 @@ body {
   margin: 0;
   padding: 15px;
 }
-.app { max-width: 420px; margin: auto; }
-h2 { text-align: center; margin-bottom: 10px; }
+.app {
+  max-width: 420px;
+  margin: auto;
+}
+h2 {
+  text-align: center;
+  margin-bottom: 10px;
+}
 
 #reader {
+  position: relative;
   border-radius: 16px;
   overflow: hidden;
   background: black;
+}
+
+/* рамка */
+.scan-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  height: 220px;
+  transform: translate(-50%, -50%);
+  border-radius: 18px;
+  border: 3px solid rgba(255,255,255,0.9);
+  box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+  pointer-events: none;
 }
 
 .card {
@@ -41,24 +62,33 @@ h2 { text-align: center; margin-bottom: 10px; }
 .row:last-child { border-bottom: none; }
 
 .label { color: #888; font-size: 13px; }
-.value { font-size: 16px; font-weight: 500; }
+.value { font-size: 16px; font-weight: 500; word-break: break-word; }
 
+/* кнопка звонка */
 .call-btn {
   background: #34c759;
   border: none;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 50%;
   font-size: 18px;
   color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex: 0 0 36px;
 }
 .call-btn:disabled { background: #ccc; }
 
-.buttons, .extra {
+.buttons {
   display: flex;
   gap: 10px;
   margin-top: 15px;
 }
+
 button {
   flex: 1;
   padding: 14px;
@@ -66,18 +96,23 @@ button {
   border: none;
   font-size: 15px;
 }
+
 .google { background: #4285f4; color: white; }
 .apple { background: black; color: white; }
-.flash { background: #ffcc00; }
-.rescan { background: #ddd; }
+.rescan { background: #ddd; margin-top: 10px; }
 
 .history-item {
-  padding: 8px 0;
+  padding: 8px;
   border-bottom: 1px solid #eee;
   font-size: 14px;
 }
 .history-item:last-child { border-bottom: none; }
 .history-item b { display: block; }
+
+.history-item.active {
+  background: #e5f0ff;
+  border-radius: 10px;
+}
 
 button:disabled { opacity: 0.4; }
 </style>
@@ -87,7 +122,10 @@ button:disabled { opacity: 0.4; }
 <div class="app">
 
 <h2>📷 QR-Сканер</h2>
-<div id="reader"></div>
+
+<div id="reader">
+  <div class="scan-frame"></div>
+</div>
 
 <div class="card">
   <div class="row">
@@ -118,16 +156,13 @@ button:disabled { opacity: 0.4; }
   <button class="apple" id="appleBtn" disabled>Apple Maps</button>
 </div>
 
-<div class="extra">
-  <button class="flash" id="flashBtn">🔦</button>
-  <button class="rescan" id="rescanBtn">🔁 Сканировать</button>
-</div>
+<button class="rescan" id="rescanBtn">🔁 Сканировать снова</button>
 
 <div class="card">
-  <div class="label">История сканов</div>
+  <div class="label">История (нажми для выбора)</div>
   <div id="history"></div>
   <button id="clearHistory" style="margin-top:10px;background:#ff3b30;color:white;">
-    🗑 Очистить
+    🗑 Удалить выбранный
   </button>
 </div>
 
@@ -141,17 +176,18 @@ const amountEl = document.getElementById("amount");
 const callBtn = document.getElementById("callBtn");
 const googleBtn = document.getElementById("googleBtn");
 const appleBtn = document.getElementById("appleBtn");
-const flashBtn = document.getElementById("flashBtn");
 const rescanBtn = document.getElementById("rescanBtn");
 
 let qr;
-let torch = false;
+let lastScanText = "";
+let lastData = {};
+let selectedIndex = null;
 
 let history = JSON.parse(localStorage.getItem("qrHistory") || "[]");
-let lastData = {};
 
+/* парсинг QR */
 function parseQR(text) {
-  let address="", phone="", amount="";
+  let address = "", phone = "", amount = "";
   const parts = text.split(";");
 
   if (parts[0] && !parts[0].includes("=")) address = parts[0].trim();
@@ -173,36 +209,48 @@ function parseQR(text) {
 
   history.unshift(lastData);
   history = history.slice(0, 50);
+  selectedIndex = 0;
+
   localStorage.setItem("qrHistory", JSON.stringify(history));
   renderHistory();
 }
 
+/* история */
 function renderHistory() {
   const box = document.getElementById("history");
   box.innerHTML = "";
-  history.forEach(item => {
+
+  history.forEach((item, index) => {
     const div = document.createElement("div");
-    div.className = "history-item";
+    div.className = "history-item" + (index === selectedIndex ? " active" : "");
+
     div.innerHTML = `
       <b>${item.address || "—"}</b>
       📞 ${item.phone || "—"} | 💶 ${item.amount || "—"}
       <div style="font-size:12px;color:#888">${item.time}</div>
     `;
-    div.onclick = () => fill(item);
+
+    div.onclick = () => {
+      selectedIndex = index;
+      fill(item);
+      renderHistory();
+    };
+
     box.appendChild(div);
   });
 }
 
 function fill(item) {
+  lastData = item;
   addressEl.textContent = item.address || "—";
   phoneEl.textContent = item.phone || "—";
   amountEl.textContent = item.amount || "—";
-  lastData = item;
   callBtn.disabled = !item.phone;
   googleBtn.disabled = !item.address;
   appleBtn.disabled = !item.address;
 }
 
+/* кнопки */
 callBtn.onclick = () => location.href = "tel:" + lastData.phone;
 
 googleBtn.onclick = () =>
@@ -213,39 +261,57 @@ appleBtn.onclick = () =>
   location.href = "https://maps.apple.com/?q=" +
   encodeURIComponent(lastData.address);
 
-// 🔦 фонарик (если поддерживается)
-flashBtn.onclick = () => {
-  torch = !torch;
-  try {
-    qr.applyVideoConstraints({ advanced: [{ torch }] });
-  } catch (e) {
-    alert("Фонарик не поддерживается на этом устройстве");
-  }
-};
-
-rescanBtn.onclick = () => startScanner();
-
 document.getElementById("clearHistory").onclick = () => {
-  if (confirm("Очистить историю?")) {
-    history = [];
-    localStorage.removeItem("qrHistory");
-    renderHistory();
+  if (selectedIndex === null) {
+    alert("Выберите адрес в истории");
+    return;
   }
+  history.splice(selectedIndex, 1);
+  selectedIndex = null;
+  localStorage.setItem("qrHistory", JSON.stringify(history));
+  renderHistory();
+
+  addressEl.textContent = "—";
+  phoneEl.textContent = "—";
+  amountEl.textContent = "—";
+  callBtn.disabled = true;
+  googleBtn.disabled = true;
+  appleBtn.disabled = true;
 };
+
+/* звук + вибрация */
+function successFeedback() {
+  if (navigator.vibrate) navigator.vibrate(200);
+  const beep = new Audio(
+    "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
+  );
+  beep.play().catch(()=>{});
+}
+
+/* сканер */
+function onScanSuccess(text) {
+  if (text === lastScanText) return;
+  lastScanText = text;
+  qr.stop();
+  successFeedback();
+  parseQR(text);
+}
 
 function startScanner() {
-  document.getElementById("reader").innerHTML = "";
+  document.getElementById("reader").innerHTML = '<div class="scan-frame"></div>';
   qr = new Html5Qrcode("reader");
   qr.start(
     { facingMode: "environment" },
-    { fps: 15, qrbox: { width: 180, height: 180 }, disableFlip: true },
-    text => {
-      qr.stop();
-      parseQR(text);
-    },
+    { fps: 20, qrbox: { width: 220, height: 220 }, disableFlip: true },
+    onScanSuccess,
     () => {}
   );
 }
+
+rescanBtn.onclick = () => {
+  lastScanText = "";
+  startScanner();
+};
 
 renderHistory();
 startScanner();
