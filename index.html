@@ -1,45 +1,229 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>QR TEST</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>QR Scanner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- ВАЖНО: библиотека -->
-  <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
 
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      padding: 10px;
-    }
-    #reader {
-      width: 100%;
-      max-width: 400px;
-      margin: auto;
-    }
-  </style>
+<style>
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f2f2f7;
+  margin: 0;
+  padding: 15px;
+}
+
+.app {
+  max-width: 420px;
+  margin: auto;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+#reader {
+  border-radius: 16px;
+  overflow: hidden;
+  background: black;
+}
+
+/* карточка */
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 14px;
+  margin-top: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.label {
+  color: #888;
+  font-size: 13px;
+}
+
+.value {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* телефон + кнопка */
+.phone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.call-btn {
+  background: #34c759;
+  border: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 18px;
+  color: white;
+}
+
+.call-btn:disabled {
+  background: #ccc;
+}
+
+/* кнопки навигации */
+.nav-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.nav-buttons button {
+  flex: 1;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.google {
+  background: #4285f4;
+  color: white;
+}
+
+.apple {
+  background: black;
+  color: white;
+}
+
+button:disabled {
+  opacity: 0.4;
+}
+</style>
 </head>
+
 <body>
 
-<h2>QR TEST</h2>
+<div class="app">
+
+<h2>📷 QR-Сканер</h2>
 
 <div id="reader"></div>
 
-<script>
-  // ПРОСТЕЙШИЙ СКАНЕР
-  const qr = new Html5Qrcode("reader");
+<div class="card">
+  <div class="row">
+    <div>
+      <div class="label">Адрес</div>
+      <div class="value" id="address">—</div>
+    </div>
+  </div>
 
-  qr.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    (text) => {
-      alert("QR считан:\n" + text);
-      qr.stop();
-    },
-    (err) => {}
-  );
+  <div class="row phone-row">
+    <div>
+      <div class="label">Телефон</div>
+      <div class="value" id="phone">—</div>
+    </div>
+    <button class="call-btn" id="callBtn" disabled>📞</button>
+  </div>
+
+  <div class="row">
+    <div>
+      <div class="label">Betrag</div>
+      <div class="value" id="amount">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="nav-buttons">
+  <button class="google" id="googleBtn" disabled>Google Maps</button>
+  <button class="apple" id="appleBtn" disabled>Apple Maps</button>
+</div>
+
+</div>
+
+<script>
+const addressEl = document.getElementById("address");
+const phoneEl = document.getElementById("phone");
+const amountEl = document.getElementById("amount");
+
+const callBtn = document.getElementById("callBtn");
+const googleBtn = document.getElementById("googleBtn");
+const appleBtn = document.getElementById("appleBtn");
+
+let data = {};
+
+// 🔍 парсинг QR
+function parseQR(text) {
+  let address = "";
+  let phone = "";
+  let amount = "";
+
+  const parts = text.split(";");
+
+  if (parts[0] && !parts[0].includes("=")) {
+    address = parts[0].trim();
+  }
+
+  parts.forEach(p => {
+    if (p.startsWith("T=")) phone = p.substring(2).trim();
+    if (p.startsWith("B=")) amount = p.substring(2).replace(",", ".").trim();
+  });
+
+  addressEl.textContent = address || "—";
+  phoneEl.textContent = phone || "—";
+  amountEl.textContent = amount || "—";
+
+  data = { address, phone };
+
+  callBtn.disabled = !phone;
+  googleBtn.disabled = !address;
+  appleBtn.disabled = !address;
+}
+
+// 📞 звонок
+callBtn.onclick = () => {
+  location.href = "tel:" + data.phone;
+};
+
+// 🧭 Google Maps
+googleBtn.onclick = () => {
+  location.href =
+    "https://www.google.com/maps/search/?api=1&query=" +
+    encodeURIComponent(data.address);
+};
+
+// 🍎 Apple Maps
+appleBtn.onclick = () => {
+  location.href =
+    "https://maps.apple.com/?q=" +
+    encodeURIComponent(data.address);
+};
+
+// 📷 QR scanner
+const qr = new Html5Qrcode("reader");
+
+qr.start(
+  { facingMode: "environment" },
+  { fps: 15, qrbox: { width: 180, height: 180 } },
+  (text) => {
+    qr.stop();
+    parseQR(text);
+  },
+  () => {}
+);
 </script>
 
 </body>
