@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <title>QR Scanner</title>
@@ -23,7 +23,7 @@ h2 {
   margin-bottom: 6px;
 }
 
-/* кнопка сканера */
+/* Scanner button */
 .scan-btn {
   width: 100%;
   margin: 6px 0 14px;
@@ -45,7 +45,7 @@ h2 {
   background: black;
 }
 
-/* рамка */
+/* Scan frame */
 .scan-frame {
   position: absolute;
   top: 50%;
@@ -94,7 +94,7 @@ h2 {
   justify-content: center;
   padding: 0;
   flex: 0 0 36px;
-  }
+}
 .call-btn:disabled { background: #ccc; }
 
 .buttons {
@@ -130,22 +130,22 @@ button {
 <body>
 <div class="app">
 
-<h2>📷 QR-Сканер</h2>
-<button id="scanToggle" class="scan-btn">▶️ Сканировать</button>
+<h2>📷 QR-Scanner</h2>
+<button id="scanToggle" class="scan-btn">▶️ Scannen</button>
 
 <div id="reader"></div>
 
 <div class="card">
   <div class="row">
     <div>
-      <div class="label">Адрес</div>
+      <div class="label">Adresse</div>
       <div class="value" id="address">—</div>
     </div>
   </div>
 
   <div class="row">
     <div>
-      <div class="label">Телефон</div>
+      <div class="label">Telefon</div>
       <div class="value" id="phone">—</div>
     </div>
     <button class="call-btn" id="callBtn" disabled>📞</button>
@@ -159,8 +159,8 @@ button {
   </div>
 
   <div class="buttons">
-    <button class="gray" id="editBtn">✏️ Редактировать</button>
-    <button class="gray" id="addBtn">➕ Добавить вручную</button>
+    <button class="gray" id="editBtn">✏️ Bearbeiten</button>
+    <button class="gray" id="addBtn">➕ Manuell hinzufügen</button>
   </div>
 </div>
 
@@ -170,10 +170,10 @@ button {
 </div>
 
 <div class="card">
-  <div class="label">История</div>
+  <div class="label">Verlauf</div>
   <div id="history"></div>
   <button id="deleteBtn" style="margin-top:10px;background:#ff3b30;color:white;">
-    🗑 Удалить
+    🗑 Löschen
   </button>
 </div>
 
@@ -192,13 +192,12 @@ const scanToggle = document.getElementById("scanToggle");
 let qr;
 let scannerRunning = false;
 let scanTimer = null;
-let lastScanText = "";
 
 let history = JSON.parse(localStorage.getItem("qrHistory") || "[]");
 let selectedIndex = null;
 let lastData = {};
 
-/* ===== Обновление экрана ===== */
+/* Anzeige aktualisieren */
 function fill(item, index) {
   selectedIndex = index;
   lastData = item;
@@ -214,7 +213,7 @@ function fill(item, index) {
   renderHistory();
 }
 
-/* ===== История ===== */
+/* Verlauf */
 function renderHistory() {
   const box = document.getElementById("history");
   box.innerHTML = "";
@@ -232,7 +231,7 @@ function renderHistory() {
   });
 }
 
-/* ===== QR парсинг ===== */
+/* QR parsen */
 function parseQR(text) {
   let address="", phone="", amount="";
   const parts = text.split(";");
@@ -251,12 +250,12 @@ function parseQR(text) {
   fill(item, 0);
 }
 
-/* ===== Редактирование / добавление ===== */
+/* Bearbeiten / Hinzufügen */
 function promptEdit(item = {}) {
-  const address = prompt("Адрес:", item.address || "");
+  const address = prompt("Adresse:", item.address || "");
   if (address === null) return;
 
-  const phone = prompt("Телефон:", item.phone || "");
+  const phone = prompt("Telefon:", item.phone || "");
   if (phone === null) return;
 
   const amount = prompt("Betrag:", item.amount || "");
@@ -272,7 +271,7 @@ function promptEdit(item = {}) {
 
 document.getElementById("editBtn").onclick = () => {
   if (selectedIndex === null) {
-    alert("Выберите запись");
+    alert("Bitte einen Eintrag auswählen");
     return;
   }
   const edited = promptEdit(history[selectedIndex]);
@@ -294,13 +293,17 @@ document.getElementById("addBtn").onclick = () => {
 
 document.getElementById("deleteBtn").onclick = () => {
   if (selectedIndex === null) return;
+  if (!confirm("Diesen Eintrag wirklich löschen?")) return;
+
   history.splice(selectedIndex, 1);
   selectedIndex = null;
   localStorage.setItem("qrHistory", JSON.stringify(history));
   renderHistory();
+
+  addressEl.textContent = phoneEl.textContent = amountEl.textContent = "—";
 };
 
-/* ===== Кнопки ===== */
+/* Aktionen */
 callBtn.onclick = () => location.href = "tel:" + lastData.phone;
 googleBtn.onclick = () =>
   location.href = "https://www.google.com/maps/search/?api=1&query=" +
@@ -309,14 +312,14 @@ appleBtn.onclick = () =>
   location.href = "https://maps.apple.com/?q=" +
   encodeURIComponent(lastData.address);
 
-/* ===== Сканер ===== */
+/* Scanner */
 function startScanner() {
   if (scannerRunning) return;
   document.getElementById("reader").innerHTML = '<div class="scan-frame"></div>';
   qr = new Html5Qrcode("reader");
   scannerRunning = true;
 
-  scanToggle.textContent = "⏹ Остановить";
+  scanToggle.textContent = "⏹ Stoppen";
   scanToggle.classList.add("off");
 
   qr.start(
@@ -335,7 +338,7 @@ function stopScanner() {
   if (!scannerRunning) return;
   qr.stop().catch(()=>{});
   scannerRunning = false;
-  scanToggle.textContent = "▶️ Сканировать";
+  scanToggle.textContent = "▶️ Scannen";
   scanToggle.classList.remove("off");
   clearTimeout(scanTimer);
 }
@@ -348,6 +351,4 @@ renderHistory();
 </script>
 
 </body>
-  </html>
-
-
+</html>
