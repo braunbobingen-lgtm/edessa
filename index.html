@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
 <title>QR Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
@@ -19,115 +20,125 @@ body {
 }
 h2 {
   text-align: center;
+  margin-bottom: 6px;
 }
 
-button {
-  border: none;
-  font-size: 15px;
-}
-
+/* кнопка сканера */
 .scan-btn {
   width: 100%;
+  margin: 6px 0 14px;
   background: #34c759;
   color: white;
+  font-size: 16px;
   padding: 14px;
   border-radius: 14px;
-  margin-bottom: 10px;
+  border: none;
 }
-.scan-btn.off { background: #aaa; }
+.scan-btn.off {
+  background: #aaa;
+}
 
 #reader {
-  margin-bottom: 15px;
+  position: relative;
   border-radius: 16px;
   overflow: hidden;
+  background: black;
+}
+
+/* рамка */
+.scan-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  height: 220px;
+  transform: translate(-50%, -50%);
+  border-radius: 18px;
+  border: 3px solid rgba(255,255,255,0.9);
+  box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+  pointer-events: none;
 }
 
 .card {
   background: white;
   border-radius: 16px;
   padding: 14px;
+  margin-top: 15px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-  margin-bottom: 15px;
 }
 
 .row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 0;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
 }
-.label {
-  color: #888;
-  font-size: 13px;
-}
-.value {
-  font-size: 16px;
-  font-weight: 500;
-  word-break: break-word;
-}
+.row:last-child { border-bottom: none; }
+
+.label { color: #888; font-size: 13px; }
+.value { font-size: 16px; font-weight: 500; word-break: break-word; }
 
 .call-btn {
+  background: #34c759;
+  border: none;
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #34c759;
-  color: white;
   font-size: 18px;
+  color: white;
 }
 .call-btn:disabled { background: #ccc; }
 
-.map-buttons {
+.buttons {
   display: flex;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 15px;
 }
-.google { background: #4285f4; color: white; flex: 1; padding: 12px; border-radius: 12px; }
-.apple { background: black; color: white; flex: 1; padding: 12px; border-radius: 12px; }
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-.action-buttons button {
+button {
   flex: 1;
-  padding: 10px;
-  border-radius: 12px;
-  font-size: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  font-size: 15px;
 }
-.new { background: #007aff; color: white; }
-.edit { background: #ddd; }
-.delete { background: #ff3b30; color: white; }
+
+.google { background: #4285f4; color: white; }
+.apple { background: black; color: white; }
+.gray { background: #ddd; }
 
 .history-item {
-  padding: 8px 0;
+  padding: 8px;
   border-bottom: 1px solid #eee;
   font-size: 14px;
 }
-.history-item:last-child { border-bottom: none; }
-.history-item.active { background: #eef3ff; }
+.history-item.active {
+  background: #e5f0ff;
+  border-radius: 10px;
+}
+.history-item b { display: block; }
 </style>
 </head>
 
 <body>
 <div class="app">
 
-<h2>📷 QR-Scanner</h2>
+<h2>📷 QR-Сканер</h2>
+<button id="scanToggle" class="scan-btn">▶️ Сканировать</button>
 
-<button id="scanBtn" class="scan-btn">▶️ Scannen</button>
-<div id="reader" style="display:none"></div>
+<div id="reader"></div>
 
 <div class="card">
   <div class="row">
     <div>
-      <div class="label">Adresse</div>
+      <div class="label">Адрес</div>
       <div class="value" id="address">—</div>
     </div>
   </div>
 
   <div class="row">
     <div>
-      <div class="label">Telefon</div>
+      <div class="label">Телефон</div>
       <div class="value" id="phone">—</div>
     </div>
     <button class="call-btn" id="callBtn" disabled>📞</button>
@@ -135,123 +146,199 @@ button {
 
   <div class="row">
     <div>
-      <div class="label">Betrag (€)</div>
+      <div class="label">Betrag</div>
       <div class="value" id="amount">—</div>
     </div>
   </div>
 
-  <div class="map-buttons">
-    <button class="google" id="googleBtn" disabled>Google Maps</button>
-    <button class="apple" id="appleBtn" disabled>Apple Maps</button>
-  </div>
-
-  <div class="action-buttons">
-    <button class="new">➕ Neu</button>
-    <button class="edit">✏️ Bearbeiten</button>
-    <button class="delete">🗑 Löschen</button>
+  <div class="buttons">
+    <button class="gray" id="editBtn">✏️ Редактировать</button>
+    <button class="gray" id="addBtn">➕ Добавить вручную</button>
   </div>
 </div>
 
+<div class="buttons">
+  <button class="google" id="googleBtn" disabled>Google Maps</button>
+  <button class="apple" id="appleBtn" disabled>Apple Maps</button>
+</div>
+
 <div class="card">
-  <div class="label">Verlauf</div>
+  <div class="label">История</div>
   <div id="history"></div>
+  <button id="deleteBtn" style="margin-top:10px;background:#ff3b30;color:white;">
+    🗑 Удалить
+  </button>
 </div>
 
 </div>
 
 <script>
-let history = JSON.parse(localStorage.getItem("qrHistory") || "[]");
-let currentIndex = null;
-let scanner = null;
-let scanning = false;
-
 const addressEl = document.getElementById("address");
 const phoneEl = document.getElementById("phone");
 const amountEl = document.getElementById("amount");
 
-function showEntry(i) {
-  currentIndex = i;
-  const e = history[i];
-  addressEl.textContent = e.address || "—";
-  phoneEl.textContent = e.phone || "—";
-  amountEl.textContent = e.amount || "—";
+const callBtn = document.getElementById("callBtn");
+const googleBtn = document.getElementById("googleBtn");
+const appleBtn = document.getElementById("appleBtn");
+const scanToggle = document.getElementById("scanToggle");
+
+let qr;
+let scannerRunning = false;
+let scanTimer = null;
+let lastScanText = "";
+
+let history = JSON.parse(localStorage.getItem("qrHistory") || "[]");
+let selectedIndex = null;
+let lastData = {};
+
+/* ===== Обновление экрана ===== */
+function fill(item, index) {
+  selectedIndex = index;
+  lastData = item;
+
+  addressEl.textContent = item.address || "—";
+  phoneEl.textContent = item.phone || "—";
+  amountEl.textContent = item.amount || "—";
+
+  callBtn.disabled = !item.phone;
+  googleBtn.disabled = !item.address;
+  appleBtn.disabled = !item.address;
+
   renderHistory();
 }
 
+/* ===== История ===== */
 function renderHistory() {
   const box = document.getElementById("history");
   box.innerHTML = "";
-  history.forEach((e, i) => {
+
+  history.forEach((item, index) => {
     const div = document.createElement("div");
-    div.className = "history-item" + (i === currentIndex ? " active" : "");
-    div.innerHTML = `<b>${e.address}</b><br>📞 ${e.phone || "-"} | 💶 ${e.amount || "-"}`;
-    div.onclick = () => showEntry(i);
+    div.className = "history-item" + (index === selectedIndex ? " active" : "");
+    div.innerHTML = `
+      <b>${item.address || "—"}</b>
+      📞 ${item.phone || "—"} | 💶 ${item.amount || "—"}
+      <div style="font-size:12px;color:#888">${item.time}</div>
+    `;
+    div.onclick = () => fill(item, index);
     box.appendChild(div);
   });
 }
 
-function save() {
+/* ===== QR парсинг ===== */
+function parseQR(text) {
+  let address="", phone="", amount="";
+  const parts = text.split(";");
+
+  if (parts[0] && !parts[0].includes("=")) address = parts[0].trim();
+  parts.forEach(p => {
+    if (p.startsWith("T=")) phone = p.substring(2).trim();
+    if (p.startsWith("B=")) amount = p.substring(2).replace(",", ".").trim();
+  });
+
+  const item = { address, phone, amount, time: new Date().toLocaleString() };
+  history.unshift(item);
+  history = history.slice(0, 50);
+
   localStorage.setItem("qrHistory", JSON.stringify(history));
-  renderHistory();
+  fill(item, 0);
 }
 
-document.querySelector(".new").onclick = () => {
-  const a = prompt("Adresse:");
-  if (!a) return;
-  const p = prompt("Telefon:");
-  const b = prompt("Betrag (€):");
-  history.unshift({ address:a, phone:p, amount:b });
-  save();
-  showEntry(0);
-};
+/* ===== Редактирование / добавление ===== */
+function promptEdit(item = {}) {
+  const address = prompt("Адрес:", item.address || "");
+  if (address === null) return;
 
-document.querySelector(".edit").onclick = () => {
-  if (currentIndex === null) return;
-  const e = history[currentIndex];
-  e.address = prompt("Adresse:", e.address) ?? e.address;
-  e.phone = prompt("Telefon:", e.phone) ?? e.phone;
-  e.amount = prompt("Betrag (€):", e.amount) ?? e.amount;
-  save();
-  showEntry(currentIndex);
-};
+  const phone = prompt("Телефон:", item.phone || "");
+  if (phone === null) return;
 
-document.querySelector(".delete").onclick = () => {
-  if (currentIndex === null) return;
-  history.splice(currentIndex,1);
-  currentIndex = null;
-  save();
-  addressEl.textContent = phoneEl.textContent = amountEl.textContent = "—";
-};
+  const amount = prompt("Betrag:", item.amount || "");
+  if (amount === null) return;
 
-document.getElementById("callBtn").onclick = () =>
-  location.href = "tel:" + phoneEl.textContent;
+  return {
+    address,
+    phone,
+    amount: amount.replace(",", "."),
+    time: new Date().toLocaleString()
+  };
+}
 
-document.getElementById("googleBtn").onclick = () =>
-  location.href = "https://www.google.com/maps/search/?api=1&query=" +
-  encodeURIComponent(addressEl.textContent);
-
-document.getElementById("appleBtn").onclick = () =>
-  location.href = "https://maps.apple.com/?q=" +
-  encodeURIComponent(addressEl.textContent);
-
-// SCANNER
-const scanBtn = document.getElementById("scanBtn");
-const reader = document.getElementById("reader");
-
-scanBtn.onclick = async () => {
-  if (scanning) {
-    scanner.stop();
-    reader.style.display = "none";
-    scanBtn.textContent = "▶️ Scannen";
-    scanning = false;
+document.getElementById("editBtn").onclick = () => {
+  if (selectedIndex === null) {
+    alert("Выберите запись");
     return;
   }
+  const edited = promptEdit(history[selectedIndex]);
+  if (!edited) return;
 
-  reader.style.display = "block";
-  scanner = new Html5Qrcode("reader");
-  scanning = true;
-  scanBtn.textContent = "⏹ Stop";
+  history[selectedIndex] = edited;
+  localStorage.setItem("qrHistory", JSON.stringify(history));
+  fill(edited, selectedIndex);
+};
 
-  await scanner.start(
+document.getElementById("addBtn").onclick = () => {
+  const item = promptEdit();
+  if (!item) return;
+
+  history.unshift(item);
+  localStorage.setItem("qrHistory", JSON.stringify(history));
+  fill(item, 0);
+};
+
+document.getElementById("deleteBtn").onclick = () => {
+  if (selectedIndex === null) return;
+  history.splice(selectedIndex, 1);
+  selectedIndex = null;
+  localStorage.setItem("qrHistory", JSON.stringify(history));
+  renderHistory();
+};
+
+/* ===== Кнопки ===== */
+callBtn.onclick = () => location.href = "tel:" + lastData.phone;
+googleBtn.onclick = () =>
+  location.href = "https://www.google.com/maps/search/?api=1&query=" +
+  encodeURIComponent(lastData.address);
+appleBtn.onclick = () =>
+  location.href = "https://maps.apple.com/?q=" +
+  encodeURIComponent(lastData.address);
+
+/* ===== Сканер ===== */
+function startScanner() {
+  if (scannerRunning) return;
+  document.getElementById("reader").innerHTML = '<div class="scan-frame"></div>';
+  qr = new Html5Qrcode("reader");
+  scannerRunning = true;
+
+  scanToggle.textContent = "⏹ Остановить";
+  scanToggle.classList.add("off");
+
+  qr.start(
     { facingMode: "environment" },
-    { fps: 10,
+    { fps: 20, qrbox: { width: 220, height: 220 } },
+    text => {
+      stopScanner();
+      parseQR(text);
+    }
+  );
+
+  scanTimer = setTimeout(stopScanner, 5000);
+}
+
+function stopScanner() {
+  if (!scannerRunning) return;
+  qr.stop().catch(()=>{});
+  scannerRunning = false;
+  scanToggle.textContent = "▶️ Сканировать";
+  scanToggle.classList.remove("off");
+  clearTimeout(scanTimer);
+}
+
+scanToggle.onclick = () => {
+  scannerRunning ? stopScanner() : startScanner();
+};
+
+renderHistory();
+</script>
+
+</body>
+  </html>
