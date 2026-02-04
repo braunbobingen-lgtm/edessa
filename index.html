@@ -1,32 +1,26 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <title>QR Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-/* ===== ОБЩЕЕ ===== */
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background: #f2f2f7;
   margin: 0;
   padding: 15px;
 }
-
 .app {
   max-width: 420px;
   margin: auto;
 }
-
 h2 {
   text-align: center;
   margin-bottom: 10px;
 }
-
-/* ===== КНОПКА СКАНЕРА ===== */
 .scan-btn {
   width: 100%;
   margin-bottom: 12px;
@@ -37,18 +31,14 @@ h2 {
   border-radius: 14px;
   border: none;
 }
-.scan-btn.off {
-  background: #aaa;
-}
+.scan-btn.off { background: #aaa; }
 
-/* ===== СКАНЕР ===== */
 #reader {
   position: relative;
   border-radius: 18px;
   overflow: hidden;
   background: black;
 }
-
 .scan-frame {
   position: absolute;
   left: 50%;
@@ -62,7 +52,6 @@ h2 {
   pointer-events: none;
 }
 
-/* ===== КАРТОЧКИ ===== */
 .card {
   background: white;
   border-radius: 16px;
@@ -70,7 +59,6 @@ h2 {
   margin-top: 15px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
-
 .row {
   display: flex;
   justify-content: space-between;
@@ -78,53 +66,34 @@ h2 {
   padding: 8px 0;
   border-bottom: 1px solid #eee;
 }
-.row:last-child {
-  border-bottom: none;
-}
+.row:last-child { border-bottom: none; }
 
-.label {
-  color: #888;
-  font-size: 13px;
-}
+.label { color: #888; font-size: 13px; }
+.value { font-size: 16px; font-weight: 500; word-break: break-word; }
 
-.value {
-  font-size: 16px;
-  font-weight: 500;
-  word-break: break-word;
-}
-
-/* ===== КНОПКА ЗВОНКА ===== */
 .call-btn {
   background: #34c759;
   border: none;
   width: 36px;
   height: 36px;
-  min-width: 36px;
-  min-height: 36px;
   border-radius: 50%;
   font-size: 18px;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
 }
-.call-btn:disabled {
-  background: #ccc;
-}
+.call-btn:disabled { background: #ccc; }
 
-/* ===== КНОПКИ КАРТ ===== */
 .buttons {
   display: flex;
   gap: 10px;
   margin-top: 15px;
 }
-
 button {
   border: none;
   font-size: 15px;
 }
-
 .google {
   flex: 1;
   padding: 14px;
@@ -132,7 +101,6 @@ button {
   background: #4285f4;
   color: white;
 }
-
 .apple {
   flex: 1;
   padding: 14px;
@@ -140,15 +108,28 @@ button {
   background: black;
   color: white;
 }
+.add {
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #007aff;
+  color: white;
+}
 
-/* ===== ИСТОРИЯ ===== */
 .history-item {
-  padding: 8px 0;
+  padding: 10px 0;
   border-bottom: 1px solid #eee;
   font-size: 14px;
 }
-.history-item:last-child {
-  border-bottom: none;
+.history-item:last-child { border-bottom: none; }
+
+.edit-btn {
+  margin-top: 6px;
+  background: #ddd;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
 }
 
 .delete-btn {
@@ -160,36 +141,43 @@ button {
   border-radius: 14px;
   border: none;
 }
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
 </style>
 </head>
 
 <body>
 <div class="app">
 
-<h2>📷 QR-Сканер</h2>
-<button id="scanToggle" class="scan-btn">▶️ Сканировать</button>
-
+<h2>📷 QR-Scanner</h2>
+<button id="scanToggle" class="scan-btn">▶️ Scannen</button>
 <div id="reader"></div>
 
 <div class="card">
   <div class="row">
     <div>
-      <div class="label">Адрес</div>
+      <div class="label">Adresse</div>
       <div class="value" id="address">—</div>
     </div>
   </div>
-
   <div class="row">
     <div>
-      <div class="label">Телефон</div>
+      <div class="label">Telefon</div>
       <div class="value" id="phone">—</div>
     </div>
     <button class="call-btn" id="callBtn" disabled>📞</button>
   </div>
-
   <div class="row">
     <div>
-      <div class="label">Betrag</div>
+      <div class="label">Betrag (€)</div>
       <div class="value" id="amount">—</div>
     </div>
   </div>
@@ -200,15 +188,20 @@ button {
   <button class="apple" id="appleBtn" disabled>Apple Maps</button>
 </div>
 
+<button class="add" id="addManual">➕ Eintrag hinzufügen</button>
+
 <div class="card">
-  <div class="label">История</div>
+  <div class="label">Verlauf</div>
   <div id="history"></div>
-  <button class="delete-btn" id="clearHistory">🗑 Удалить</button>
+  <button class="delete-btn" id="clearHistory">🗑 Verlauf löschen</button>
 </div>
 
 </div>
 
 <script>
+let history = JSON.parse(localStorage.getItem("qrHistory") || "[]");
+let editingIndex = null;
+
 const addressEl = document.getElementById("address");
 const phoneEl = document.getElementById("phone");
 const amountEl = document.getElementById("amount");
@@ -216,104 +209,76 @@ const amountEl = document.getElementById("amount");
 const callBtn = document.getElementById("callBtn");
 const googleBtn = document.getElementById("googleBtn");
 const appleBtn = document.getElementById("appleBtn");
-const scanToggle = document.getElementById("scanToggle");
 
-let qr;
-let scannerRunning = false;
-let scanTimer = null;
-let lastScanText = "";
-
-let history = JSON.parse(localStorage.getItem("qrHistory") || "[]");
-
-function parseQR(text) {
-  if (text === lastScanText) return;
-  lastScanText = text;
-
-  let address = "", phone = "", amount = "";
-
-  const parts = text.split(";");
-  address = parts[0]?.trim() || "";
-
-  parts.forEach(p => {
-    if (p.startsWith("T=")) phone = p.substring(2).trim();
-    if (p.startsWith("B=")) amount = p.substring(2).replace(",", ".").trim();
-  });
-
-  addressEl.textContent = address || "—";
-  phoneEl.textContent = phone || "—";
-  amountEl.textContent = amount || "—";
-
-  callBtn.disabled = !phone;
-  googleBtn.disabled = !address;
-  appleBtn.disabled = !address;
-
-  history.unshift({ address, phone, amount, time: new Date().toLocaleString() });
-  history = history.slice(0, 50);
+function saveHistory() {
   localStorage.setItem("qrHistory", JSON.stringify(history));
   renderHistory();
+}
+
+function showEntry(item) {
+  addressEl.textContent = item.address || "—";
+  phoneEl.textContent = item.phone || "—";
+  amountEl.textContent = item.amount || "—";
+  callBtn.disabled = !item.phone;
+  googleBtn.disabled = !item.address;
+  appleBtn.disabled = !item.address;
+}
+
+function addOrEditEntry(index = null) {
+  const a = prompt("Adresse:", index !== null ? history[index].address : "");
+  if (a === null) return;
+  const p = prompt("Telefon:", index !== null ? history[index].phone : "");
+  if (p === null) return;
+  const b = prompt("Betrag (€):", index !== null ? history[index].amount : "");
+  if (b === null) return;
+
+  const entry = {
+    address: a.trim(),
+    phone: p.trim(),
+    amount: b.trim(),
+    time: new Date().toLocaleString()
+  };
+
+  if (index !== null) history[index] = entry;
+  else history.unshift(entry);
+
+  saveHistory();
+  showEntry(entry);
 }
 
 function renderHistory() {
   const box = document.getElementById("history");
   box.innerHTML = "";
-  history.forEach(item => {
+  history.forEach((item, i) => {
     const div = document.createElement("div");
     div.className = "history-item";
-    div.innerHTML = `<b>${item.address}</b><br>📞 ${item.phone} | 💶 ${item.amount}<br><small>${item.time}</small>`;
+    div.innerHTML = `
+      <b>${item.address}</b><br>
+      📞 ${item.phone || "-"} | 💶 ${item.amount || "-"}<br>
+      <small>${item.time}</small><br>
+      <button class="edit-btn">✏️ Bearbeiten</button>
+    `;
+    div.querySelector(".edit-btn").onclick = () => addOrEditEntry(i);
+    div.onclick = () => showEntry(item);
     box.appendChild(div);
   });
 }
 
 callBtn.onclick = () => location.href = "tel:" + phoneEl.textContent;
-googleBtn.onclick = () => location.href =
-  "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(addressEl.textContent);
-appleBtn.onclick = () => location.href =
-  "https://maps.apple.com/?q=" + encodeURIComponent(addressEl.textContent);
+googleBtn.onclick = () =>
+  location.href = "https://www.google.com/maps/search/?api=1&query=" +
+  encodeURIComponent(addressEl.textContent);
+appleBtn.onclick = () =>
+  location.href = "https://maps.apple.com/?q=" +
+  encodeURIComponent(addressEl.textContent);
 
-function startScanner() {
-  if (scannerRunning) return;
-  lastScanText = "";
-
-  document.getElementById("reader").innerHTML = '<div class="scan-frame"></div>';
-  qr = new Html5Qrcode("reader");
-  scannerRunning = true;
-
-  scanToggle.textContent = "⏹ Остановить";
-  scanToggle.classList.add("off");
-
-  qr.start(
-    { facingMode: "environment" },
-    { fps: 20, qrbox: { width: 220, height: 220 } },
-    text => {
-      stopScanner();
-      parseQR(text);
-    }
-  );
-
-  scanTimer = setTimeout(stopScanner, 5000);
-}
-
-function stopScanner() {
-  if (!scannerRunning) return;
-  qr.stop().catch(()=>{});
-  scannerRunning = false;
-  scanToggle.textContent = "▶️ Сканировать";
-  scanToggle.classList.remove("off");
-  clearTimeout(scanTimer);
-}
-
-scanToggle.onclick = () => {
-  scannerRunning ? stopScanner() : startScanner();
-};
-
+document.getElementById("addManual").onclick = () => addOrEditEntry();
 document.getElementById("clearHistory").onclick = () => {
   history = [];
-  localStorage.removeItem("qrHistory");
-  renderHistory();
+  saveHistory();
 };
 
 renderHistory();
 </script>
-
 </body>
 </html>
