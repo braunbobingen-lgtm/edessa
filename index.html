@@ -19,138 +19,93 @@ body {
 }
 h2 {
   text-align: center;
-  margin-bottom: 10px;
 }
+
+button {
+  border: none;
+  font-size: 15px;
+}
+
 .scan-btn {
   width: 100%;
-  margin-bottom: 12px;
   background: #34c759;
   color: white;
-  font-size: 16px;
   padding: 14px;
   border-radius: 14px;
-  border: none;
+  margin-bottom: 10px;
 }
 .scan-btn.off { background: #aaa; }
 
 #reader {
-  position: relative;
-  border-radius: 18px;
+  margin-bottom: 15px;
+  border-radius: 16px;
   overflow: hidden;
-  background: black;
-}
-.scan-frame {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 220px;
-  height: 220px;
-  transform: translate(-50%, -50%);
-  border-radius: 18px;
-  border: 3px solid rgba(255,255,255,0.9);
-  box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
-  pointer-events: none;
 }
 
 .card {
   background: white;
   border-radius: 16px;
   padding: 14px;
-  margin-top: 15px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  margin-bottom: 15px;
 }
+
 .row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
+  padding: 6px 0;
 }
-.row:last-child { border-bottom: none; }
-
-.label { color: #888; font-size: 13px; }
-.value { font-size: 16px; font-weight: 500; word-break: break-word; }
+.label {
+  color: #888;
+  font-size: 13px;
+}
+.value {
+  font-size: 16px;
+  font-weight: 500;
+  word-break: break-word;
+}
 
 .call-btn {
-  background: #34c759;
-  border: none;
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  font-size: 18px;
+  background: #34c759;
   color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 18px;
 }
 .call-btn:disabled { background: #ccc; }
 
-.buttons {
+.map-buttons {
   display: flex;
   gap: 10px;
-  margin-top: 15px;
-}
-button {
-  border: none;
-  font-size: 15px;
-}
-.google {
-  flex: 1;
-  padding: 14px;
-  border-radius: 14px;
-  background: #4285f4;
-  color: white;
-}
-.apple {
-  flex: 1;
-  padding: 14px;
-  border-radius: 14px;
-  background: black;
-  color: white;
-}
-.add {
-  width: 100%;
   margin-top: 10px;
-  padding: 14px;
-  border-radius: 14px;
-  background: #007aff;
-  color: white;
 }
+.google { background: #4285f4; color: white; flex: 1; padding: 12px; border-radius: 12px; }
+.apple { background: black; color: white; flex: 1; padding: 12px; border-radius: 12px; }
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.action-buttons button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+.new { background: #007aff; color: white; }
+.edit { background: #ddd; }
+.delete { background: #ff3b30; color: white; }
 
 .history-item {
-  padding: 10px 0;
+  padding: 8px 0;
   border-bottom: 1px solid #eee;
   font-size: 14px;
 }
 .history-item:last-child { border-bottom: none; }
-
-.edit-btn {
-  margin-top: 6px;
-  background: #ddd;
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-}
-
-.delete-btn {
-  margin-top: 10px;
-  width: 100%;
-  background: #ff3b30;
-  color: white;
-  padding: 14px;
-  border-radius: 14px;
-  border: none;
-}
-
-input {
-  width: 100%;
-  padding: 10px;
-  margin-top: 6px;
-  margin-bottom: 10px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  font-size: 15px;
-}
+.history-item.active { background: #eef3ff; }
 </style>
 </head>
 
@@ -158,8 +113,9 @@ input {
 <div class="app">
 
 <h2>📷 QR-Scanner</h2>
-<button id="scanToggle" class="scan-btn">▶️ Scannen</button>
-<div id="reader"></div>
+
+<button id="scanBtn" class="scan-btn">▶️ Scannen</button>
+<div id="reader" style="display:none"></div>
 
 <div class="card">
   <div class="row">
@@ -168,6 +124,7 @@ input {
       <div class="value" id="address">—</div>
     </div>
   </div>
+
   <div class="row">
     <div>
       <div class="label">Telefon</div>
@@ -175,110 +132,126 @@ input {
     </div>
     <button class="call-btn" id="callBtn" disabled>📞</button>
   </div>
+
   <div class="row">
     <div>
       <div class="label">Betrag (€)</div>
       <div class="value" id="amount">—</div>
     </div>
   </div>
-</div>
 
-<div class="buttons">
-  <button class="google" id="googleBtn" disabled>Google Maps</button>
-  <button class="apple" id="appleBtn" disabled>Apple Maps</button>
-</div>
+  <div class="map-buttons">
+    <button class="google" id="googleBtn" disabled>Google Maps</button>
+    <button class="apple" id="appleBtn" disabled>Apple Maps</button>
+  </div>
 
-<button class="add" id="addManual">➕ Eintrag hinzufügen</button>
+  <div class="action-buttons">
+    <button class="new">➕ Neu</button>
+    <button class="edit">✏️ Bearbeiten</button>
+    <button class="delete">🗑 Löschen</button>
+  </div>
+</div>
 
 <div class="card">
   <div class="label">Verlauf</div>
   <div id="history"></div>
-  <button class="delete-btn" id="clearHistory">🗑 Verlauf löschen</button>
 </div>
 
 </div>
 
 <script>
 let history = JSON.parse(localStorage.getItem("qrHistory") || "[]");
-let editingIndex = null;
+let currentIndex = null;
+let scanner = null;
+let scanning = false;
 
 const addressEl = document.getElementById("address");
 const phoneEl = document.getElementById("phone");
 const amountEl = document.getElementById("amount");
 
-const callBtn = document.getElementById("callBtn");
-const googleBtn = document.getElementById("googleBtn");
-const appleBtn = document.getElementById("appleBtn");
-
-function saveHistory() {
-  localStorage.setItem("qrHistory", JSON.stringify(history));
+function showEntry(i) {
+  currentIndex = i;
+  const e = history[i];
+  addressEl.textContent = e.address || "—";
+  phoneEl.textContent = e.phone || "—";
+  amountEl.textContent = e.amount || "—";
   renderHistory();
-}
-
-function showEntry(item) {
-  addressEl.textContent = item.address || "—";
-  phoneEl.textContent = item.phone || "—";
-  amountEl.textContent = item.amount || "—";
-  callBtn.disabled = !item.phone;
-  googleBtn.disabled = !item.address;
-  appleBtn.disabled = !item.address;
-}
-
-function addOrEditEntry(index = null) {
-  const a = prompt("Adresse:", index !== null ? history[index].address : "");
-  if (a === null) return;
-  const p = prompt("Telefon:", index !== null ? history[index].phone : "");
-  if (p === null) return;
-  const b = prompt("Betrag (€):", index !== null ? history[index].amount : "");
-  if (b === null) return;
-
-  const entry = {
-    address: a.trim(),
-    phone: p.trim(),
-    amount: b.trim(),
-    time: new Date().toLocaleString()
-  };
-
-  if (index !== null) history[index] = entry;
-  else history.unshift(entry);
-
-  saveHistory();
-  showEntry(entry);
 }
 
 function renderHistory() {
   const box = document.getElementById("history");
   box.innerHTML = "";
-  history.forEach((item, i) => {
+  history.forEach((e, i) => {
     const div = document.createElement("div");
-    div.className = "history-item";
-    div.innerHTML = `
-      <b>${item.address}</b><br>
-      📞 ${item.phone || "-"} | 💶 ${item.amount || "-"}<br>
-      <small>${item.time}</small><br>
-      <button class="edit-btn">✏️ Bearbeiten</button>
-    `;
-    div.querySelector(".edit-btn").onclick = () => addOrEditEntry(i);
-    div.onclick = () => showEntry(item);
+    div.className = "history-item" + (i === currentIndex ? " active" : "");
+    div.innerHTML = `<b>${e.address}</b><br>📞 ${e.phone || "-"} | 💶 ${e.amount || "-"}`;
+    div.onclick = () => showEntry(i);
     box.appendChild(div);
   });
 }
 
-callBtn.onclick = () => location.href = "tel:" + phoneEl.textContent;
-googleBtn.onclick = () =>
+function save() {
+  localStorage.setItem("qrHistory", JSON.stringify(history));
+  renderHistory();
+}
+
+document.querySelector(".new").onclick = () => {
+  const a = prompt("Adresse:");
+  if (!a) return;
+  const p = prompt("Telefon:");
+  const b = prompt("Betrag (€):");
+  history.unshift({ address:a, phone:p, amount:b });
+  save();
+  showEntry(0);
+};
+
+document.querySelector(".edit").onclick = () => {
+  if (currentIndex === null) return;
+  const e = history[currentIndex];
+  e.address = prompt("Adresse:", e.address) ?? e.address;
+  e.phone = prompt("Telefon:", e.phone) ?? e.phone;
+  e.amount = prompt("Betrag (€):", e.amount) ?? e.amount;
+  save();
+  showEntry(currentIndex);
+};
+
+document.querySelector(".delete").onclick = () => {
+  if (currentIndex === null) return;
+  history.splice(currentIndex,1);
+  currentIndex = null;
+  save();
+  addressEl.textContent = phoneEl.textContent = amountEl.textContent = "—";
+};
+
+document.getElementById("callBtn").onclick = () =>
+  location.href = "tel:" + phoneEl.textContent;
+
+document.getElementById("googleBtn").onclick = () =>
   location.href = "https://www.google.com/maps/search/?api=1&query=" +
   encodeURIComponent(addressEl.textContent);
-appleBtn.onclick = () =>
+
+document.getElementById("appleBtn").onclick = () =>
   location.href = "https://maps.apple.com/?q=" +
   encodeURIComponent(addressEl.textContent);
 
-document.getElementById("addManual").onclick = () => addOrEditEntry();
-document.getElementById("clearHistory").onclick = () => {
-  history = [];
-  saveHistory();
-};
+// SCANNER
+const scanBtn = document.getElementById("scanBtn");
+const reader = document.getElementById("reader");
 
-renderHistory();
-</script>
-</body>
-</html>
+scanBtn.onclick = async () => {
+  if (scanning) {
+    scanner.stop();
+    reader.style.display = "none";
+    scanBtn.textContent = "▶️ Scannen";
+    scanning = false;
+    return;
+  }
+
+  reader.style.display = "block";
+  scanner = new Html5Qrcode("reader");
+  scanning = true;
+  scanBtn.textContent = "⏹ Stop";
+
+  await scanner.start(
+    { facingMode: "environment" },
+    { fps: 10,
