@@ -124,6 +124,18 @@ button {
   border-radius: 10px;
 }
 .history-item b { display: block; }
+
+#shiftReport input {
+  width: 120px;        /* ← ВОТ ГЛАВНОЕ */
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 13px;
+  height: 28px;
+  text-align: right;
+}
+
+
 </style>
 </head>
 
@@ -176,6 +188,56 @@ button {
     🗑 Löschen
   </button>
 </div>
+<div id="confirmBox" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1000;">
+  <div style="background:#fff; margin:40% auto; padding:20px; width:85%; max-width:320px; border-radius:16px; text-align:center;">
+    <div style="font-size:16px; margin-bottom:20px;">
+      Eintrag wirklich löschen?
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button id="cancelDel" style="flex:1;padding:12px;border-radius:12px;border:none;background:#ddd;">
+        Abbrechen
+      </button>
+      <button id="okDel" style="flex:1;padding:12px;border-radius:12px;border:none;background:#ff3b30;color:white;">
+        Löschen
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SCHICHTBERICHT -->
+<div class="card" id="shiftReport">
+  <div class="label">Schichtbericht</div>
+
+  <div class="row">
+    <span>Anzahl Adressen</span>
+    <b id="reportCount">0</b>
+  </div>
+
+  <div class="row">
+    <span>Summe Betrag (€)</span>
+    <b id="reportSum">0.00</b>
+  </div>
+
+  <div class="row">
+    <span>Lohn (€)</span>
+    <input id="lohn" type="number" step="0.01">
+  </div>
+
+  <div class="row">
+    <span>Benzin (€)</span>
+    <input id="benzin" type="number" step="0.01">
+  </div>
+
+  <div class="row">
+    <span>Sonstige (€)</span>
+    <input id="sonstige" type="number" step="0.01">
+  </div>
+
+  <div class="row">
+    <span><b>Ergebnis (€)</b></span>
+    <b id="reportResult">0.00</b>
+  </div>
+</div>
 
 </div>
 
@@ -189,15 +251,24 @@ const googleBtn = document.getElementById("googleBtn");
 const appleBtn = document.getElementById("appleBtn");
 const scanToggle = document.getElementById("scanToggle");
 
+const confirmBox = document.getElementById("confirmBox");
+const okDel = document.getElementById("okDel");
+const cancelDel = document.getElementById("cancelDel");
+
 let qr;
 let scannerRunning = false;
 let scanTimer = null;
 
 let history = JSON.parse(localStorage.getItem("qrHistory") || "[]");
+// 🔄 Автоочистка данных не за сегодня
+const today = new Date().toISOString().slice(0,10);
+history = history.filter(item => item.date === today);
+localStorage.setItem("qrHistory", JSON.stringify(history));
+
 let selectedIndex = null;
 let lastData = {};
 
-/* Anzeige aktualisieren */
+/* ---------------- Anzeige ---------------- */
 function fill(item, index) {
   selectedIndex = index;
   lastData = item;
@@ -211,9 +282,10 @@ function fill(item, index) {
   appleBtn.disabled = !item.address;
 
   renderHistory();
+  updateShiftReport();
 }
 
-/* Verlauf */
+/* ---------------- Verlauf ---------------- */
 function renderHistory() {
   const box = document.getElementById("history");
   box.innerHTML = "";
@@ -231,7 +303,7 @@ function renderHistory() {
   });
 }
 
-/* QR parsen */
+/* ---------------- QR PARSE (ЕДИНСТВЕННАЯ) ---------------- */
 function parseQR(text) {
   let address="", phone="", amount="";
   const parts = text.split(";");
@@ -242,13 +314,55 @@ function parseQR(text) {
     if (p.startsWith("B=")) amount = p.substring(2).replace(",", ".").trim();
   });
 
-  const item = { address, phone, amount, time: new Date().toLocaleString() };
+  const now = new Date();
+  const item = {
+    address,
+    phone,
+    amount,
+    time: now.toLocaleTimeString(),
+    date: now.toISOString().slice(0,10)
+  };
+
   history.unshift(item);
   history = history.slice(0, 50);
-
   localStorage.setItem("qrHistory", JSON.stringify(history));
+
   fill(item, 0);
 }
+
+/* ---------------- Scanner ---------------- */
+function startScanner() {
+  if (scannerRunning) return;
+
+  document.getElementById("reader").innerHTML = '<div class="scan-frame"></div>';
+  qr = new Html5Qrcode("reader");
+  scannerRunning = true;
+
+  scanToggle.textContent = "⏹ Stoppen";
+  scanToggle.classList.add("off");
+
+  qr.start(
+    { facingMode: "environment" },
+    { fps: 20, qrbox: { width: 220, height: 220 } },
+    text => {
+      stopScanner();
+      parseQR(text);
+    }
+  );
+
+  scanTimer = setTimeout(stopScanner, 20000);
+}
+
+function stopScanner() {
+  if (!scannerRunning) return;
+  qr.stop().catch(()=>{});
+  scannerRunning = false;
+  scanToggle.textContent = "▶️ Scannen";
+  scanToggle.classList.remove("off");
+  clearTimeout(scanTimer);
+}
+
+scanToggle.onclick = () => scannerRunning ? stopScanner() : startScanner();
 
 /* Bearbeiten / Hinzufügen */
 function promptEdit(item = {}) {
@@ -261,12 +375,15 @@ function promptEdit(item = {}) {
   const amount = prompt("Betrag:", item.amount || "");
   if (amount === null) return;
 
-  return {
-    address,
-    phone,
-    amount: amount.replace(",", "."),
-    time: new Date().toLocaleString()
-  };
+  const now = new Date();
+
+    return {
+      address,
+      phone,
+      amount: amount.replace(",", "."),
+      time: now.toLocaleTimeString(),
+      date: now.toISOString().slice(0,10)
+    };
 }
 
 document.getElementById("editBtn").onclick = () => {
@@ -291,19 +408,8 @@ document.getElementById("addBtn").onclick = () => {
   fill(item, 0);
 };
 
-document.getElementById("deleteBtn").onclick = () => {
-  if (selectedIndex === null) return;
-  if (!confirm("Diesen Eintrag wirklich löschen?")) return;
 
-  history.splice(selectedIndex, 1);
-  selectedIndex = null;
-  localStorage.setItem("qrHistory", JSON.stringify(history));
-  renderHistory();
-
-  addressEl.textContent = phoneEl.textContent = amountEl.textContent = "—";
-};
-
-/* Aktionen */
+/* ---------------- Aktionen ---------------- */
 callBtn.onclick = () => location.href = "tel:" + lastData.phone;
 googleBtn.onclick = () =>
   location.href = "https://www.google.com/maps/search/?api=1&query=" +
@@ -312,43 +418,52 @@ appleBtn.onclick = () =>
   location.href = "https://maps.apple.com/?q=" +
   encodeURIComponent(lastData.address);
 
-/* Scanner */
-function startScanner() {
-  if (scannerRunning) return;
-  document.getElementById("reader").innerHTML = '<div class="scan-frame"></div>';
-  qr = new Html5Qrcode("reader");
-  scannerRunning = true;
-
-  scanToggle.textContent = "⏹ Stoppen";
-  scanToggle.classList.add("off");
-
-  qr.start(
-    { facingMode: "environment" },
-    { fps: 20, qrbox: { width: 220, height: 220 } },
-    text => {
-      stopScanner();
-      parseQR(text);
-    }
-  );
-
-  scanTimer = setTimeout(stopScanner, 5000);
-}
-
-function stopScanner() {
-  if (!scannerRunning) return;
-  qr.stop().catch(()=>{});
-  scannerRunning = false;
-  scanToggle.textContent = "▶️ Scannen";
-  scanToggle.classList.remove("off");
-  clearTimeout(scanTimer);
-}
-
-scanToggle.onclick = () => {
-  scannerRunning ? stopScanner() : startScanner();
+/* ---------------- Löschen ---------------- */
+document.getElementById("deleteBtn").onclick = () => {
+  if (selectedIndex === null) return;
+  confirmBox.style.display = "block";
 };
 
+cancelDel.onclick = () => confirmBox.style.display = "none";
+
+okDel.onclick = () => {
+  history.splice(selectedIndex, 1);
+  selectedIndex = null;
+  localStorage.setItem("qrHistory", JSON.stringify(history));
+  confirmBox.style.display = "none";
+  renderHistory();
+  updateShiftReport();
+};
+
+/* ---------------- Schichtbericht ---------------- */
+function updateShiftReport() {
+  const today = new Date().toISOString().slice(0,10);
+  const todayItems = history.filter(i => i.date === today);
+
+  const sum = todayItems.reduce(
+    (a, i) => a + (parseFloat(i.amount) || 0),
+    0
+  );
+
+  document.getElementById("reportCount").textContent = todayItems.length;
+  document.getElementById("reportSum").textContent = sum.toFixed(2);
+
+  const lohn = parseFloat(document.getElementById("lohn").value) || 0;
+  const benzin = parseFloat(document.getElementById("benzin").value) || 0;
+  const sonstige = parseFloat(document.getElementById("sonstige").value) || 0;
+
+  document.getElementById("reportResult").textContent =
+    (sum - lohn - benzin - sonstige).toFixed(2);
+}
+
+["lohn","benzin","sonstige"].forEach(id =>
+  document.getElementById(id).addEventListener("input", updateShiftReport)
+);
+
 renderHistory();
+updateShiftReport();
 </script>
 
 </body>
 </html>
+
