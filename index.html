@@ -1,115 +1,209 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini App</title>
+<meta charset="UTF-8">
+<title>Mini App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      margin: 0;
-      font-family: system-ui, sans-serif;
-    }
+<style>
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f2f2f7;
+}
 
-    /* pages */
-    .page {
-      display: none;
-      height: 100vh;
-      padding-bottom: 70px; /* Platz für Bottom Nav */
-      box-sizing: border-box;
-    }
+.page {
+  display: none;
+  padding: 15px;
+  padding-bottom: 90px;
+}
 
-    .page.active {
-      display: block;
-    }
+.page.active {
+  display: block;
+}
 
-    /* scanner mock */
-    #page-scanner {
-      background: #000;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-    }
+/* ---------- Bottom Navigation ---------- */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: #fff;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid #ddd;
+}
 
-    /* adressen */
-    #page-adressen {
-      padding: 16px;
-    }
+.bottom-nav button {
+  background: none;
+  border: none;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #555;
+}
 
-    /* bericht */
-    #page-bericht {
-      padding: 16px;
-    }
+.bottom-nav button.active {
+  color: #ff9500;
+}
 
-    /* bottom navigation */
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 65px;
-      background: #f5f3ef;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      border-top: 1px solid #ddd;
-    }
+/* ---------- Scanner ---------- */
+.scanner-box {
+  height: calc(100vh - 90px);
+  background: black;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  border-radius: 16px;
+}
 
-    .bottom-nav button {
-      background: none;
-      border: none;
-      font-size: 22px;
-      cursor: pointer;
-    }
+/* ---------- Liste ---------- */
+#adressListe {
+  list-style: none;
+  padding: 0;
+}
 
-    .bottom-nav button.active {
-      color: #ff7a00;
-    }
-  </style>
+#adressListe li {
+  background: #fff;
+  margin-bottom: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+#adressListe li.active {
+  background: #d1f7c4;
+}
+
+#toggleAllBtn {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  border: none;
+  font-size: 15px;
+  background: #007aff;
+  color: white;
+}
+
+/* ---------- Bericht ---------- */
+.card {
+  background: white;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+</style>
 </head>
+
 <body>
 
-  <!-- SCANNER -->
-  <section id="page-scanner" class="page active">
-    📷 Scanner (ganzer Bildschirm)
-  </section>
+<!-- ---------- SCANNER ---------- -->
+<section id="page-scanner" class="page active">
+  <h2>📷 Scanner</h2>
+  <div class="scanner-box">
+    Scanner – Vollbild
+  </div>
+</section>
 
-  <!-- ADRESSEN -->
-  <section id="page-adressen" class="page">
-    <h2>Adressen</h2>
-    <p>Hier kommt die Liste der Adressen.</p>
-  </section>
+<!-- ---------- LISTE ---------- -->
+<section id="page-liste" class="page">
+  <h2>📋 Adressliste</h2>
 
-  <!-- BERICHT -->
-  <section id="page-bericht" class="page">
-    <h2>Bericht</h2>
-    <p>Lohn / Benzin / Sonstige</p>
-  </section>
+  <button id="toggleAllBtn" onclick="toggleAll()">Alle markieren</button>
 
-  <!-- BOTTOM NAV -->
-  <nav class="bottom-nav">
-    <button id="btn-scanner" class="active" onclick="showPage('scanner')">📷</button>
-    <button id="btn-adressen" onclick="showPage('adressen')">📋</button>
-    <button id="btn-bericht" onclick="showPage('bericht')">📊</button>
-  </nav>
+  <ul id="adressListe"></ul>
+</section>
 
-  <script>
-    function showPage(name) {
-      // pages
-      document.querySelectorAll('.page').forEach(p => {
-        p.classList.remove('active');
-      });
-      document.getElementById('page-' + name).classList.add('active');
+<!-- ---------- BERICHT ---------- -->
+<section id="page-report" class="page">
+  <h2>📊 Bericht</h2>
+  <div class="card">
+    Bericht kommt später
+  </div>
+</section>
 
-      // buttons
-      document.querySelectorAll('.bottom-nav button').forEach(b => {
-        b.classList.remove('active');
-      });
-      document.getElementById('btn-' + name).classList.add('active');
-    }
-  </script>
+<!-- ---------- NAV ---------- -->
+<nav class="bottom-nav">
+  <button onclick="showPage('scanner')" id="btn-scanner" class="active">
+    📷
+    <small>Scanner</small>
+  </button>
+  <button onclick="showPage('liste')" id="btn-liste">
+    📋
+    <small>Liste</small>
+  </button>
+  <button onclick="showPage('report')" id="btn-report">
+    📊
+    <small>Bericht</small>
+  </button>
+</nav>
+
+<script>
+/* ---------- Navigation ---------- */
+function showPage(name) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".bottom-nav button").forEach(b => b.classList.remove("active"));
+
+  document.getElementById("page-" + name).classList.add("active");
+  document.getElementById("btn-" + name).classList.add("active");
+
+  if (name === "liste") renderListe();
+}
+
+/* ---------- Daten ---------- */
+let adressen = [
+  { adresse: "Augsburger Str. 10", betrag: "25.00", active: false },
+  { adresse: "Bahnhofstr. 3", betrag: "18.50", active: false },
+  { adresse: "Singoldanger 1b", betrag: "31.90", active: false }
+];
+
+/* ---------- Liste ---------- */
+function renderListe() {
+  const ul = document.getElementById("adressListe");
+  ul.innerHTML = "";
+
+  adressen
+    .sort((a, b) => a.adresse.localeCompare(b.adresse))
+    .forEach((item, index) => {
+      const li = document.createElement("li");
+      li.className = item.active ? "active" : "";
+      li.innerHTML = `
+        <span>${item.adresse}</span>
+        <strong>${item.betrag} €</strong>
+      `;
+      li.onclick = () => toggleItem(index);
+      ul.appendChild(li);
+    });
+
+  updateToggleAllBtn();
+}
+
+function toggleItem(index) {
+  adressen[index].active = !adressen[index].active;
+  renderListe();
+}
+
+function toggleAll() {
+  const allActive = adressen.every(a => a.active);
+  adressen.forEach(a => a.active = !allActive);
+  renderListe();
+}
+
+function updateToggleAllBtn() {
+  const btn = document.getElementById("toggleAllBtn");
+  const allActive = adressen.every(a => a.active);
+  btn.textContent = allActive ? "Alle abwählen" : "Alle markieren";
+}
+</script>
 
 </body>
 </html>
