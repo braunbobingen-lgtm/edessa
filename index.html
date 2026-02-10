@@ -165,6 +165,11 @@ button {
   background: #e5e5ea;
 }
 
+.history-item.done {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
 </style>
 </head>
 
@@ -376,13 +381,46 @@ function renderHistory() {
 
   history.forEach((item, index) => {
     const div = document.createElement("div");
-    div.className = "history-item" + (index === selectedIndex ? " active" : "");
+    div.className =
+      "history-item" +
+      (index === selectedIndex ? " active" : "") +
+      (item.done ? " done" : "");
+
     div.innerHTML = `
       <b>${item.address || "—"}</b>
       📞 ${item.phone || "—"} | 💶 ${item.amount || "—"}
       <div style="font-size:12px;color:#888">${item.time}</div>
     `;
+
+    // 👉 ТАП — как было
     div.onclick = () => fill(item, index);
+
+    // 👇 СВАЙП
+    let startX = 0;
+
+    div.addEventListener("touchstart", e => {
+      startX = e.touches[0].clientX;
+    });
+
+    div.addEventListener("touchend", e => {
+      const endX = e.changedTouches[0].clientX;
+      const diff = endX - startX;
+
+      // 👉 вправо — erledigt
+      if (diff > 60) {
+        item.done = true;
+        localStorage.setItem("qrHistory", JSON.stringify(history));
+        renderHistory();
+      }
+
+      // 👈 влево — вернуть
+      if (diff < -60) {
+        item.done = false;
+        localStorage.setItem("qrHistory", JSON.stringify(history));
+        renderHistory();
+      }
+    });
+
     box.appendChild(div);
   });
 }
@@ -404,7 +442,8 @@ function parseQR(text) {
     phone,
     amount,
     time: now.toLocaleTimeString(),
-    date: now.toISOString().slice(0,10)
+    date: now.toISOString().slice(0,10),
+    done: false
   };
   // ❌ Проверка на полный дубликат (адрес + телефон + Betrag)
     const isDuplicate = history.some(i =>
@@ -492,7 +531,8 @@ editSave.onclick = () => {
     phone: editPhone.value.trim(),
     amount: editAmount.value.replace(",", "."),
     time: now.toLocaleTimeString(),
-    date: now.toISOString().slice(0,10)
+    date: now.toISOString().slice(0,10),
+    done: false
   };
 
   if (editIndex !== null) {
@@ -609,4 +649,4 @@ editAddress.addEventListener("input", () => {
 </script>
 
 </body>
-  </html>
+</html>
