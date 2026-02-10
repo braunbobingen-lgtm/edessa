@@ -2,252 +2,611 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>QR Driver App</title>
+<title>QR Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 body {
-  margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background: #f2f2f7;
-}
-
-/* -------- Pages -------- */
-.page {
-  display: none;
+  margin: 0;
   padding: 15px;
-  padding-bottom: 90px;
 }
-.page.active { display: block; }
+.app {
+  max-width: 420px;
+  margin: auto;
+}
+h2 {
+  text-align: center;
+  margin-bottom: 6px;
+}
 
-/* -------- Bottom Nav -------- */
-.bottom-nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: 70px;
-  background: #fff;
-  border-top: 1px solid #ddd;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-}
-.bottom-nav button {
-  background: none;
-  border: none;
-  font-size: 14px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #555;
-}
-.bottom-nav button.active { color: #ff9500; }
-
-/* -------- Scanner -------- */
+/* Scanner button */
 .scan-btn {
   width: 100%;
+  margin: 6px 0 14px;
   background: #34c759;
   color: white;
+  font-size: 16px;
   padding: 14px;
   border-radius: 14px;
   border: none;
-  font-size: 16px;
 }
+.scan-btn.off {
+  background: #aaa;
+}
+
 #reader {
-  margin-top: 10px;
+  position: relative;
   border-radius: 16px;
   overflow: hidden;
   background: black;
-  height: 60vh;
 }
 
-/* -------- Cards -------- */
+/* Scan frame */
+.scan-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  height: 220px;
+  transform: translate(-50%, -50%);
+  border-radius: 18px;
+  border: 3px solid rgba(255,255,255,0.9);
+  box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+
 .card {
   background: white;
-  padding: 14px;
   border-radius: 16px;
-  margin-bottom: 14px;
-  box-shadow: 0 4px 10px rgba(0,0,0,.08);
+  padding: 14px;
+  margin-top: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
+
 .row {
   display: flex;
   justify-content: space-between;
-  padding: 6px 0;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
 }
+.row:last-child { border-bottom: none; }
+
 .label { color: #888; font-size: 13px; }
+.value { font-size: 16px; font-weight: 500; word-break: break-word; }
 
-/* -------- Address List -------- */
-#adressList li {
-  list-style: none;
-  background: #fff;
-  margin-bottom: 8px;
-  padding: 12px;
-  border-radius: 12px;
+.call-btn {
+  background: #34c759;
+  border: none;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  font-size: 18px;
+  color: white;
   display: flex;
-  justify-content: space-between;
-  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex: 0 0 36px;
 }
-#adressList li.active { background: #d1f7c4; }
+.call-btn:disabled { background: #ccc; }
 
-/* -------- Inputs -------- */
-input {
-  width: 110px;
-  padding: 6px;
+.buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+button {
+  flex: 1;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  font-size: 15px;
+}
+
+.google { background: #4285f4; color: white; }
+.apple { background: black; color: white; }
+.gray { background: #ddd; }
+
+.history-item {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+.history-item.active {
+  background: #e5f0ff;
+  border-radius: 10px;
+}
+.history-item b { display: block; }
+
+#shiftReport input {
+  width: 120px;        /* ← ВОТ ГЛАВНОЕ */
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 13px;
+  height: 28px;
+  text-align: right;
+}
+#editBox input {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0 12px;
   border-radius: 10px;
   border: 1px solid #ccc;
+  font-size: 15px;
 }
+#streetHints {
+  background: #f2f2f7;
+  border-radius: 10px;
+  margin-top: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.street-hint {
+  padding: 10px;
+  font-size: 14px;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.street-hint:last-child {
+  border-bottom: none;
+}
+
+.street-hint:hover {
+  background: #e5e5ea;
+}
+
 </style>
 </head>
 
 <body>
+<div class="app">
 
-<!-- ================= SCANNER ================= -->
-<section id="page-scanner" class="page active">
-  <h2>📷 Scanner</h2>
-  <button class="scan-btn" id="scanToggle">▶️ Scannen</button>
-  <div id="reader"></div>
+<h2>📷 QR-Scanner</h2>
+<button id="scanToggle" class="scan-btn">▶️ Scannen</button>
 
-  <div class="card">
-    <div class="row"><span>Adresse</span><b id="address">—</b></div>
-    <div class="row"><span>Telefon</span><b id="phone">—</b></div>
-    <div class="row"><span>Betrag</span><b id="amount">—</b></div>
+<div id="reader"></div>
+
+<div class="card">
+  <div class="row">
+    <div>
+      <div class="label">Adresse</div>
+      <div class="value" id="address">—</div>
+    </div>
   </div>
-</section>
 
-<!-- ================= LISTE ================= -->
-<section id="page-list" class="page">
-  <h2>📋 Alle Adressen</h2>
-  <button class="scan-btn" onclick="toggleAll()">Alle markieren</button>
-  <ul id="adressList"></ul>
-</section>
-
-<!-- ================= REPORT ================= -->
-<section id="page-report" class="page">
-  <h2>📊 Schichtbericht</h2>
-  <div class="card">
-    <div class="row"><span>Anzahl</span><b id="repCount">0</b></div>
-    <div class="row"><span>Summe €</span><b id="repSum">0.00</b></div>
-    <div class="row"><span>Lohn</span><input id="lohn"></div>
-    <div class="row"><span>Benzin</span><input id="benzin"></div>
-    <div class="row"><span>Sonstige</span><input id="sonstige"></div>
-    <div class="row"><b>Ergebnis</b><b id="repResult">0.00</b></div>
+  <div class="row">
+    <div>
+      <div class="label">Telefon</div>
+      <div class="value" id="phone">—</div>
+    </div>
+    <button class="call-btn" id="callBtn" disabled>📞</button>
   </div>
-</section>
 
-<!-- ================= NAV ================= -->
-<nav class="bottom-nav">
-  <button id="btn-scanner" class="active" onclick="showPage('scanner')">📷<small>Scanner</small></button>
-  <button id="btn-list" onclick="showPage('list')">📋<small>Liste</small></button>
-  <button id="btn-report" onclick="showPage('report')">📊<small>Report</small></button>
-</nav>
+  <div class="row">
+    <div>
+      <div class="label">Betrag</div>
+      <div class="value" id="amount">—</div>
+    </div>
+  </div>
+
+  <div class="buttons">
+    <button class="gray" id="editBtn">✏️ Bearbeiten</button>
+    <button class="gray" id="addBtn">➕ Manuell hinzufügen</button>
+  </div>
+</div>
+
+<div class="buttons">
+  <button class="google" id="googleBtn" disabled>Google Maps</button>
+  <button class="apple" id="appleBtn" disabled>Apple Maps</button>
+</div>
+
+<div class="card">
+  <div class="label">Verlauf   </div>
+  <div id="history"></div>
+  <button id="deleteBtn" style="margin-top:10px;background:#ff3b30;color:white;">
+    🗑 Löschen
+  </button>
+</div>
+<div id="confirmBox" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1000;">
+  <div style="background:#fff; margin:40% auto; padding:20px; width:85%; max-width:320px; border-radius:16px; text-align:center;">
+    <div style="font-size:16px; margin-bottom:20px;">
+      Eintrag wirklich löschen?
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button id="cancelDel" style="flex:1;padding:12px;border-radius:12px;border:none;background:#ddd;">
+        Abbrechen
+      </button>
+      <button id="okDel" style="flex:1;padding:12px;border-radius:12px;border:none;background:#ff3b30;color:white;">
+        Löschen
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SCHICHTBERICHT -->
+<div class="card" id="shiftReport">
+  <div class="label">Schichtbericht</div>
+
+  <div class="row">
+    <span>Anzahl Adressen</span>
+    <b id="reportCount">0</b>
+  </div>
+
+  <div class="row">
+    <span>Summe Betrag (€)</span>
+    <b id="reportSum">0.00</b>
+  </div>
+
+  <div class="row">
+    <span>Lohn (€)</span>
+    <input id="lohn" type="number" step="0.01">
+  </div>
+
+  <div class="row">
+    <span>Benzin (€)</span>
+    <input id="benzin" type="number" step="0.01">
+  </div>
+
+  <div class="row">
+    <span>Sonstige (€)</span>
+    <input id="sonstige" type="number" step="0.01">
+  </div>
+
+  <div class="row">
+    <span><b>Ergebnis (€)</b></span>
+    <b id="reportResult">0.00</b>
+  </div>
+</div>
+
+<!-- MANUELL HINZUFÜGEN / BEARBEITEN -->
+<div id="editBox" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1000;">
+  <div style="
+    background:#fff;
+    margin:20% auto;
+    padding:20px;
+    width:85%;
+    max-width:340px;
+    border-radius:16px;
+  ">
+    <h3 style="margin-top:0;text-align:center">Eintrag</h3>
+
+    <label class="label">Adresse</label>
+    <input id="editAddress" type="text">
+    <div id="streetHints"></div>
+
+    <label class="label">Telefon</label>
+    <input id="editPhone" type="tel">
+
+    <label class="label">Betrag (€)</label>
+    <input id="editAmount" type="number" step="0.01">
+
+    <div style="display:flex; gap:10px; margin-top:15px;">
+      <button id="editCancel" class="gray">Abbrechen</button>
+      <button id="editSave" class="google">Speichern</button>
+    </div>
+  </div>
+</div>
+
+</div>
 
 <script>
-/* -------- Navigation -------- */
-function showPage(p) {
-  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-  document.querySelectorAll('.bottom-nav button').forEach(x => x.classList.remove('active'));
-  document.getElementById('page-' + p).classList.add('active');
-  document.getElementById('btn-' + p).classList.add('active');
-  if (p === 'list') renderList();
-  if (p === 'report') updateReport();
-}
+const streetHints = document.getElementById("streetHints");
+const addressEl = document.getElementById("address");
+const phoneEl = document.getElementById("phone");
+const amountEl = document.getElementById("amount");
 
-/* -------- Data -------- */
-let history = JSON.parse(localStorage.getItem("qrHistory") || "[]");
-
-/* -------- QR -------- */
-let qr, running = false;
+const callBtn = document.getElementById("callBtn");
+const googleBtn = document.getElementById("googleBtn");
+const appleBtn = document.getElementById("appleBtn");
 const scanToggle = document.getElementById("scanToggle");
 
+const confirmBox = document.getElementById("confirmBox");
+const okDel = document.getElementById("okDel");
+const cancelDel = document.getElementById("cancelDel");
+
+let qr;
+let scannerRunning = false;
+let scanTimer = null;
+
+let history = JSON.parse(localStorage.getItem("qrHistory") || "[]");
+// 🔄 Автоочистка данных не за сегодня
+const today = new Date().toISOString().slice(0,10);
+history = history.filter(item => item.date === today);
+localStorage.setItem("qrHistory", JSON.stringify(history));
+
+let selectedIndex = null;
+let lastData = {};
+
+// ===== MANUELL EDIT BOX =====
+const editBox = document.getElementById("editBox");
+const editAddress = document.getElementById("editAddress");
+const editPhone = document.getElementById("editPhone");
+const editAmount = document.getElementById("editAmount");
+const editSave = document.getElementById("editSave");
+const editCancel = document.getElementById("editCancel");
+
+let editIndex = null;
+
+function openEdit(item = {}, index = null) {
+  editIndex = index;
+  editAddress.value = item.address || "";
+  editPhone.value = item.phone || "";
+  editAmount.value = item.amount || "";
+  editBox.style.display = "block";
+}
+
+function closeEdit() {
+  editBox.style.display = "none";
+  editIndex = null;
+  streetHints.innerHTML = "";
+}
+
+editCancel.onclick = closeEdit;
+/* ---------------- Anzeige ---------------- */
+function fill(item, index) {
+  selectedIndex = index;
+  lastData = item;
+
+  addressEl.textContent = item.address || "—";
+  phoneEl.textContent = item.phone || "—";
+  amountEl.textContent = item.amount || "—";
+
+  callBtn.disabled = !item.phone;
+  googleBtn.disabled = !item.address;
+  appleBtn.disabled = !item.address;
+
+  renderHistory();
+  updateShiftReport();
+}
+
+/* ---------------- Verlauf ---------------- */
+function renderHistory() {
+  const box = document.getElementById("history");
+  box.innerHTML = "";
+
+  history.forEach((item, index) => {
+    const div = document.createElement("div");
+    div.className = "history-item" + (index === selectedIndex ? " active" : "");
+    div.innerHTML = `
+      <b>${item.address || "—"}</b>
+      📞 ${item.phone || "—"} | 💶 ${item.amount || "—"}
+      <div style="font-size:12px;color:#888">${item.time}</div>
+    `;
+    div.onclick = () => fill(item, index);
+    box.appendChild(div);
+  });
+}
+
+/* ---------------- QR PARSE (ЕДИНСТВЕННАЯ) ---------------- */
 function parseQR(text) {
   let address="", phone="", amount="";
-  text.split(";").forEach(p=>{
-    if(p.startsWith("T=")) phone=p.slice(2);
-    if(p.startsWith("B=")) amount=p.slice(2);
-    if(!p.includes("=")) address=p;
+  const parts = text.split(";");
+
+  if (parts[0] && !parts[0].includes("=")) address = parts[0].trim();
+  parts.forEach(p => {
+    if (p.startsWith("T=")) phone = p.substring(2).trim();
+    if (p.startsWith("B=")) amount = p.substring(2).replace(",", ".").trim();
   });
 
+  const now = new Date();
   const item = {
-    address, phone, amount,
-    date: new Date().toISOString().slice(0,10),
-    active: false
+    address,
+    phone,
+    amount,
+    time: now.toLocaleTimeString(),
+    date: now.toISOString().slice(0,10)
   };
+  // ❌ Проверка на полный дубликат (адрес + телефон + Betrag)
+    const isDuplicate = history.some(i =>
+      i.address === address &&
+      i.phone === phone &&
+      i.amount === amount &&
+      i.date === now.toISOString().slice(0,10)
+    );
 
-  if (!history.some(h =>
-    h.address===item.address &&
-    h.phone===item.phone &&
-    h.amount===item.amount
-  )) {
-    history.unshift(item);
-    localStorage.setItem("qrHistory", JSON.stringify(history));
+    if (isDuplicate) {
+      // если полностью совпадает — просто показать существующую запись
+      const index = history.findIndex(i =>
+        i.address === address &&
+        i.phone === phone &&
+        i.amount === amount
+      );
+      fill(history[index], index);
+      return;
+    }
+
+  history.unshift(item);
+  history = history.slice(0, 50);
+  localStorage.setItem("qrHistory", JSON.stringify(history));
+
+  fill(item, 0);
+}
+
+/* ---------------- Scanner ---------------- */
+function startScanner() {
+  if (scannerRunning) return;
+
+  document.getElementById("reader").innerHTML = '<div class="scan-frame"></div>';
+  qr = new Html5Qrcode("reader");
+  scannerRunning = true;
+
+  scanToggle.textContent = "⏹ Stoppen";
+  scanToggle.classList.add("off");
+
+  qr.start(
+    { facingMode: "environment" },
+    { fps: 20, qrbox: { width: 220, height: 220 } },
+    text => {
+      stopScanner();
+      parseQR(text);
+    }
+  );
+
+  scanTimer = setTimeout(stopScanner, 20000);
+}
+
+function stopScanner() {
+  if (!scannerRunning) return;
+  qr.stop().catch(()=>{});
+  scannerRunning = false;
+  scanToggle.textContent = "▶️ Scannen";
+  scanToggle.classList.remove("off");
+  clearTimeout(scanTimer);
+}
+
+scanToggle.onclick = () => scannerRunning ? stopScanner() : startScanner();
+
+
+
+document.getElementById("editBtn").onclick = () => {
+  if (selectedIndex === null) {
+    alert("Bitte einen Eintrag auswählen");
+    return;
+  }
+  openEdit(history[selectedIndex], selectedIndex);
+};
+
+document.getElementById("addBtn").onclick = () => {
+  openEdit();
+};
+
+editSave.onclick = () => {
+  if (!editAddress.value.trim()) {
+    alert("Adresse fehlt");
+    return;
   }
 
-  document.getElementById("address").textContent = address;
-  document.getElementById("phone").textContent = phone;
-  document.getElementById("amount").textContent = amount;
-}
+  const now = new Date();
+  const item = {
+    address: editAddress.value.trim(),
+    phone: editPhone.value.trim(),
+    amount: editAmount.value.replace(",", "."),
+    time: now.toLocaleTimeString(),
+    date: now.toISOString().slice(0,10)
+  };
 
-function startScan() {
-  if(running) return;
-  qr = new Html5Qrcode("reader");
-  running = true;
-  scanToggle.textContent = "⏹ Stop";
-  qr.start({facingMode:"environment"}, {fps:10, qrbox:220},
-    txt => { stopScan(); parseQR(txt); }
-  );
-}
-function stopScan() {
-  if(!running) return;
-  qr.stop(); running=false;
-  scanToggle.textContent = "▶️ Scannen";
-}
-scanToggle.onclick = ()=> running ? stopScan() : startScan();
+  if (editIndex !== null) {
+    history[editIndex] = item;
+    fill(item, editIndex);
+  } else {
+    history.unshift(item);
+    fill(item, 0);
+  }
 
-/* -------- List -------- */
-function renderList() {
-  const ul = document.getElementById("adressList");
-  ul.innerHTML="";
-  history
-    .sort((a,b)=>a.address.localeCompare(b.address))
-    .forEach((i,idx)=>{
-      const li=document.createElement("li");
-      li.className=i.active?"active":"";
-      li.innerHTML=`<span>${i.address}</span><b>${i.amount}€</b>`;
-      li.onclick=()=>{i.active=!i.active; save(); renderList();}
-      ul.appendChild(li);
-    });
-}
-
-function toggleAll() {
-  const all = history.every(i=>i.active);
-  history.forEach(i=>i.active=!all);
-  save(); renderList();
-}
-
-/* -------- Report -------- */
-function updateReport() {
-  const today = new Date().toISOString().slice(0,10);
-  const items = history.filter(i=>i.date===today);
-  const sum = items.reduce((a,i)=>a+(+i.amount||0),0);
-
-  repCount.textContent = items.length;
-  repSum.textContent = sum.toFixed(2);
-
-  const lohn=+lohn.value||0;
-  const benzin=+benzin.value||0;
-  const sonstige=+sonstige.value||0;
-
-  repResult.textContent=(sum-lohn-benzin-sonstige).toFixed(2);
-}
-
-["lohn","benzin","sonstige"].forEach(id=>{
-  document.getElementById(id).oninput=updateReport;
-});
-
-function save() {
   localStorage.setItem("qrHistory", JSON.stringify(history));
+  closeEdit();
+  renderHistory();
+  updateShiftReport();
+};
+
+
+/* ---------------- Aktionen ---------------- */
+callBtn.onclick = () => location.href = "tel:" + lastData.phone;
+googleBtn.onclick = () =>
+  location.href = "https://www.google.com/maps/search/?api=1&query=" +
+  encodeURIComponent(lastData.address);
+appleBtn.onclick = () =>
+  location.href = "https://maps.apple.com/?q=" +
+  encodeURIComponent(lastData.address);
+
+/* ---------------- Löschen ---------------- */
+document.getElementById("deleteBtn").onclick = () => {
+  if (selectedIndex === null) return;
+  confirmBox.style.display = "block";
+};
+
+cancelDel.onclick = () => confirmBox.style.display = "none";
+
+okDel.onclick = () => {
+  history.splice(selectedIndex, 1);
+  selectedIndex = null;
+  localStorage.setItem("qrHistory", JSON.stringify(history));
+  confirmBox.style.display = "none";
+  renderHistory();
+  updateShiftReport();
+};
+
+/* ---------------- Schichtbericht ---------------- */
+function updateShiftReport() {
+  const today = new Date().toISOString().slice(0,10);
+  const todayItems = history.filter(i => i.date === today);
+
+  const sum = todayItems.reduce(
+    (a, i) => a + (parseFloat(i.amount) || 0),
+    0
+  );
+
+  document.getElementById("reportCount").textContent = todayItems.length;
+  document.getElementById("reportSum").textContent = sum.toFixed(2);
+
+  const lohn = parseFloat(document.getElementById("lohn").value) || 0;
+  const benzin = parseFloat(document.getElementById("benzin").value) || 0;
+  const sonstige = parseFloat(document.getElementById("sonstige").value) || 0;
+
+  document.getElementById("reportResult").textContent =
+    (sum - lohn - benzin - sonstige).toFixed(2);
 }
+
+["lohn","benzin","sonstige"].forEach(id =>
+  document.getElementById(id).addEventListener("input", updateShiftReport)
+);
+
+renderHistory();
+updateShiftReport();
+
+
+editCancel.onclick = closeEdit;
+
+let streets = [];
+
+// Загрузка улиц из файла
+fetch("Strasse.txt")
+  .then(res => res.text())
+  .then(text => {
+    streets = text
+      .split("\n")
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    console.log("Streets loaded:", streets.length);
+  })
+  .catch(err => console.error("Street file error", err));
+
+
+editAddress.addEventListener("input", () => {
+  const value = editAddress.value.trim().toLowerCase();
+  streetHints.innerHTML = "";
+
+  if (value.length < 2) return;
+
+  const matches = streets
+    .filter(s => s.toLowerCase().includes(value))
+    .slice(0, 6); // максимум 6 подсказок
+
+  matches.forEach(street => {
+    const div = document.createElement("div");
+    div.className = "street-hint";
+    div.textContent = street;
+
+    div.onclick = () => {
+      editAddress.value = street;
+      streetHints.innerHTML = "";
+    };
+
+    streetHints.appendChild(div);
+  });
+});
 </script>
 
 </body>
-</html>
+  </html>
