@@ -5,7 +5,7 @@
 <title>QR Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8"></script>
 
 <style>
 body {
@@ -96,7 +96,22 @@ h2 {
   flex: 0 0 36px;
 }
 .call-btn:disabled { background: #ccc; }
-
+.zufugen-btn {
+  background: #ddd;
+  border: none;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  font-size: 18px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex: 0 0 36px;
+}
 .buttons {
   display: flex;
   gap: 10px;
@@ -141,6 +156,7 @@ button {
   border-radius: 10px;
   border: 1px solid #ccc;
   font-size: 15px;
+  box-sizing: border-box;
 }
 #streetHints {
   background: #f2f2f7;
@@ -188,6 +204,7 @@ button {
       <div class="label">Adresse</div>
       <div class="value" id="address">—</div>
     </div>
+    <button class="zufugen-btn" id="addBtn">➕ </button>
   </div>
 
   <div class="row">
@@ -203,18 +220,16 @@ button {
       <div class="label">Betrag</div>
       <div class="value" id="amount">—</div>
     </div>
+    <button class="zufugen-btn" id="editBtn">✏️</button>
   </div>
 
   <div class="buttons">
-    <button class="gray" id="editBtn">✏️ Bearbeiten</button>
-    <button class="gray" id="addBtn">➕ Manuell hinzufügen</button>
-  </div>
-</div>
-
-<div class="buttons">
   <button class="google" id="googleBtn" disabled>Google Maps</button>
   <button class="apple" id="appleBtn" disabled>Apple Maps</button>
+ </div>
 </div>
+
+
 
 <div class="card">
   <div class="label">Verlauf   </div>
@@ -651,6 +666,3 @@ editAddress.addEventListener("input", () => {
 
 </body>
 </html>
-
-
-
