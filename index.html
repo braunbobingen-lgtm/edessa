@@ -5,7 +5,10 @@
 <title>QR Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://unpkg.com/html5-qrcode@2.3.8"></script>
+<script type="module">
+import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
+window.QrScanner = QrScanner;
+</script>
 
 <style>
 body {
@@ -187,6 +190,207 @@ button {
   background: #d1f5d3;  
 }
 
+#scannerOverlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    background:black;
+}
+
+#scannerVideo{
+    position:absolute;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.scanner-dark{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.45);
+}
+
+.scan-box{
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:270px;
+    height:270px;
+    transform:translate(-50%,-50%);
+    border:3px solid rgba(255,255,255,.9);
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.scan-line{
+    position:absolute;
+    width:100%;
+    height:3px;
+    background:#34c759;
+    animation:scan 2s linear infinite;
+}
+
+@keyframes scan{
+    from{
+        top:0;
+    }
+    to{
+        top:100%;
+    }
+}
+
+#closeScanner{
+     position:absolute;
+    right:18px;
+    top:18px;
+    width:42px;
+    height:42px;
+    border:none;
+    border-radius:50%;
+    background:#ddd;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    padding:0;
+    line-height:1;
+    font-size:24px;
+}
+#bottomBar{
+position:fixed;
+
+left:12px;
+right:12px;
+bottom:18px;
+
+height:64px;
+
+background:rgba(255,255,255,.85);
+
+backdrop-filter:blur(18px);
+
+border-radius:28px;
+
+display:flex;
+
+justify-content:space-around;
+
+align-items:center;
+
+box-shadow:0 10px 30px rgba(0,0,0,.15);
+
+z-index:9100;
+
+}
+
+#bottomBar button{
+
+flex:1;
+
+height:100%;
+
+background:none;
+
+border:none;
+
+display:flex;
+
+flex-direction:column;
+
+justify-content:center;
+
+align-items:center;
+
+color:#444;
+
+font-size:10px;
+
+}
+
+#bottomBar button .icon{
+
+font-size:22px;
+
+margin-bottom:2px;
+
+}
+
+#bottomBar button:active{
+
+transform:scale(.94);
+
+}
+
+body{
+
+padding-bottom:100px;
+
+}
+
+#shiftReport{
+
+position:fixed;
+
+left:0;
+right:0;
+bottom:-100%;
+
+z-index:9200;
+
+transition:.35s;
+
+border-radius:26px 26px 0 0;
+
+max-height:85vh;
+
+overflow:auto;
+
+padding-bottom:40px;
+
+}
+
+#shiftReport.show{
+
+bottom:0;
+
+}
+
+#closeReport{
+    position:absolute;
+    right:18px;
+    top:18px;
+    width:42px;
+    height:42px;
+    border:none;
+    border-radius:50%;
+    background:#ddd;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    padding:0;
+    line-height:1;
+    font-size:24px;
+}
+
+#reportBackdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    opacity:0;
+    visibility:hidden;
+    transition:.3s;
+    z-index:9000;
+}
+
+#reportBackdrop.show{
+    opacity:1;
+    visibility:visible;
+}
+
 </style>
 </head>
 
@@ -194,9 +398,52 @@ button {
 <div class="app">
 
 <h2>📷 QR-Scanner</h2>
+
 <button id="scanToggle" class="scan-btn">▶️ Scannen</button>
 
-<div id="reader"></div>
+<div id="scannerOverlay">
+
+  <video id="scannerVideo"></video>
+
+  <div class="scanner-dark"></div>
+
+  <div class="scan-box">
+    <div class="scan-line"></div>
+  </div>
+
+  <button id="closeScanner">✕</button>
+  
+
+</div>
+
+<div id="bottomBar">
+
+  <button id="scanNav">
+      <div class="icon">📷</div>
+      <span>Scanner</span>
+  </button>
+
+<button id="addBtn">
+      <div class="icon">➕</div>
+      <span>Adresse</span>
+  </button>
+
+ <button id="callBtn" disabled>
+      <div class="icon">📞</div>
+      <span>Anrufen</span>
+  </button>
+
+  <button id="mapsNav">
+      <div class="icon">🧭</div>
+      <span>Navigation</span>
+  </button>
+
+  <button id="reportNav">
+      <div class="icon">📋</div>
+      <span>Bericht</span>
+  </button>
+
+</div>
 
 <div class="card">
   <div class="row">
@@ -204,7 +451,6 @@ button {
       <div class="label">Adresse</div>
       <div class="value" id="address">—</div>
     </div>
-    <button class="zufugen-btn" id="addBtn">➕ </button>
   </div>
 
   <div class="row">
@@ -288,7 +534,6 @@ button {
     <b id="reportResult">0.00</b>
   </div>
 </div>
-
 <!-- MANUELL HINZUFÜGEN / BEARBEITEN -->
 <div id="editBox" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1000;">
   <div style="
@@ -318,6 +563,10 @@ button {
   </div>
 </div>
 
+</div>
+
+<div id="reportBackdrop">
+  <button id="closeReport">✕</button>
 </div>
 
 <script>
@@ -488,40 +737,85 @@ function parseQR(text) {
 }
 
 /* ---------------- Scanner ---------------- */
-function startScanner() {
-  if (scannerRunning) return;
+let scanner;
 
-  document.getElementById("reader").innerHTML = '<div class="scan-frame"></div>';
-  qr = new Html5Qrcode("reader");
-  scannerRunning = true;
+async function startScanner(){
 
-  scanToggle.textContent = "⏹ Stoppen";
-  scanToggle.classList.add("off");
+    document.getElementById("scannerOverlay").style.display="block";
 
-  qr.start(
-    { facingMode: "environment" },
-    { fps: 20, qrbox: { width: 220, height: 220 } },
-    text => {
-      stopScanner();
-      parseQR(text);
-    }
-  );
+    scanner = new QrScanner(
+        document.getElementById("scannerVideo"),
 
-  scanTimer = setTimeout(stopScanner, 20000);
+        result => {
+
+            navigator.vibrate?.(100);
+
+            stopScanner();
+
+            parseQR(result.data);
+
+        },
+
+        {
+            preferredCamera:"environment"
+        }
+    );
+
+    await scanner.start();
+
+    scannerRunning=true;
+
+    scanToggle.textContent="⏹ Stoppen";
 }
 
-function stopScanner() {
-  if (!scannerRunning) return;
-  qr.stop().catch(()=>{});
-  scannerRunning = false;
-  scanToggle.textContent = "▶️ Scannen";
-  scanToggle.classList.remove("off");
-  clearTimeout(scanTimer);
+
+function stopScanner(){
+
+    if(scanner){
+
+        scanner.stop();
+
+        scanner.destroy();
+
+        scanner=null;
+    }
+
+    scannerRunning=false;
+
+    document.getElementById("scannerOverlay").style.display="none";
+
+    scanToggle.textContent="▶️ Scannen";
 }
 
 scanToggle.onclick = () => scannerRunning ? stopScanner() : startScanner();
 
+document.getElementById("scanNav").onclick=()=>{
 
+startScanner();
+
+}
+
+document.getElementById("mapsNav").onclick=()=>{
+
+if(lastData.address){
+
+location.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(lastData.address);
+
+}
+
+}
+
+const report = document.getElementById("shiftReport");
+const backdrop = document.getElementById("reportBackdrop");
+
+document.getElementById("reportNav").onclick = () => {
+    report.classList.add("show");
+    backdrop.classList.add("show");
+};
+
+
+
+document.getElementById("closeScanner").onclick=stopScanner;
 
 document.getElementById("editBtn").onclick = () => {
   if (selectedIndex === null) {
@@ -662,7 +956,16 @@ editAddress.addEventListener("input", () => {
     streetHints.appendChild(div);
   });
 });
-</script>
+document.getElementById("closeReport").onclick = () => {
+    report.classList.remove("show");
+    backdrop.classList.remove("show");
+};
 
+backdrop.onclick = () => {
+    report.classList.remove("show");
+    backdrop.classList.remove("show");
+};
+
+</script>
 </body>
 </html>
